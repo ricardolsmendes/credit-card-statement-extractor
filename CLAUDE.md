@@ -15,10 +15,12 @@ tests/
 
 ## Commands
 
+```shell
 uv sync --all-extras   # install deps and create .venv
 uv run pytest          # run tests
 uv run ruff check .    # lint
 uv run ruff format .   # format
+```
 
 ## Code Style
 
