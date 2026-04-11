@@ -72,6 +72,8 @@ A developer needs to check or modify project metadata (name, version, dependenci
 - **FR-006**: The test runner MUST discover and execute all tests under `tests/` without requiring manual path specification
 - **FR-007**: The source layout MUST allow the application package(s) under `src/` to be importable by the test suite without path manipulation by the developer
 - **FR-008**: All tool-specific settings (linter, formatter, test runner, etc.) MUST be configured inside `pyproject.toml` rather than in separate tool configuration files
+- **FR-009**: `uv` MUST be used as the sole dependency manager for installing packages, managing the virtual environment, and running project commands — `pip` is not used for any project operation
+- **FR-010**: The project MUST use an isolated virtual environment; all development commands (test, lint, run) MUST execute within it without requiring the developer to activate it manually
 
 ### Key Entities
 
@@ -93,6 +95,15 @@ A developer needs to check or modify project metadata (name, version, dependenci
 - The project targets Python 3 (version unspecified; a reasonable modern default will be chosen during implementation)
 - The `src` layout (placing packages inside a `src/` subdirectory rather than at the project root) is the intended convention, consistent with modern Python packaging best practices
 - No existing application code or test files need to be migrated; this is a greenfield setup
+- `uv` is the designated dependency manager; `pip` is not used for any project operation
+- `uv` creates and manages a `.venv` virtual environment automatically; developers do not need to create or activate it manually when using `uv run`
 - The choice of test runner, linter, and formatter is deferred to the implementation phase; this spec only requires they be configurable via `pyproject.toml`
 - A single `pyproject.toml` at the project root is sufficient; monorepo or multi-package layouts are out of scope
 - Legacy configuration files (`setup.py`, `setup.cfg`, `requirements.txt`, etc.) will not be created as part of this setup
+
+## Clarifications
+
+### Session 2026-04-11
+
+- Q: What dependency manager should be used for this project? → A: `uv` (not `pip`); all dependency operations and command execution go through `uv`
+- Q: Is it clear that a virtual environment must be used? → A: Yes — `uv` manages a `.venv` automatically; developers run commands via `uv run` so manual activation is never required

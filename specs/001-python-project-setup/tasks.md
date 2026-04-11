@@ -97,6 +97,22 @@
 
 ---
 
+---
+
+## Phase 7: Clarification — Switch to uv (FR-009, FR-010)
+
+**Purpose**: Apply spec clarifications — replace pip with uv as the sole dependency manager and make virtual environment usage explicit
+
+- [x] T020 Run `uv sync` from the project root to create `uv.lock` and a `.venv` managed by uv
+- [x] T021 Verify `uv run pytest` executes the test suite successfully — confirms uv manages the venv and pytest is accessible without manual activation
+- [x] T022 Verify `uv run ruff check .` exits 0 — confirms ruff is accessible via uv
+- [x] T023 Update `specs/001-python-project-setup/quickstart.md` to replace `pip install -e .`, `pytest`, and `ruff` commands with `uv sync`, `uv run pytest`, and `uv run ruff check .`
+- [x] T024 Update `CLAUDE.md` to reflect uv-based commands
+
+**Checkpoint**: All developer workflow commands use `uv run`; `uv.lock` committed; no pip references in documentation.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
