@@ -97,7 +97,7 @@ A developer needs to check or modify project metadata (name, version, dependenci
 - No existing application code or test files need to be migrated; this is a greenfield setup
 - `uv` is the designated dependency manager; `pip` is not used for any project operation
 - `uv` creates and manages a `.venv` virtual environment automatically; developers do not need to create or activate it manually when using `uv run`
-- The choice of test runner, linter, and formatter is deferred to the implementation phase; this spec only requires they be configurable via `pyproject.toml`
+- `pytest` is the test runner and `ruff` is the linter/formatter; both are configured via `pyproject.toml`
 - A single `pyproject.toml` at the project root is sufficient; monorepo or multi-package layouts are out of scope
 - Legacy configuration files (`setup.py`, `setup.cfg`, `requirements.txt`, etc.) will not be created as part of this setup
 

@@ -47,7 +47,7 @@
 ### Implementation for User Story 1
 
 - [x] T007 [US1] Add `version = "0.1.0"` to `src/credit_card_statement_extractor/__init__.py` so the package has a meaningful importable attribute
-- [x] T008 [US1] Confirm `python -c "from credit_card_statement_extractor import version; print(version)"` prints `0.1.0` — verifies the src-layout is correctly wired in `pyproject.toml`
+- [x] T008 [US1] Confirm `uv run python -c "from credit_card_statement_extractor import version; print(version)"` prints `0.1.0` — verifies the src-layout is correctly wired in `pyproject.toml`
 
 **Checkpoint**: User Story 1 complete — application package is discoverable and importable from `src/` without any path manipulation.
 
@@ -79,7 +79,7 @@
 
 - [x] T012 [P] [US3] Add `[tool.ruff]` section to `pyproject.toml` with `line-length`, `target-version`, `[tool.ruff.lint] select`, and `[tool.ruff.format] quote-style` per `data-model.md`
 - [x] T013 [P] [US3] Add `[project.optional-dependencies]` dev group to `pyproject.toml` declaring `pytest` and `ruff` as development dependencies (not runtime)
-- [x] T014 [US3] Run `ruff check .` from the project root and confirm it exits 0 with no violations — verifies Ruff is correctly configured via `pyproject.toml`
+- [x] T014 [US3] Run `uv run ruff check .` from the project root and confirm it exits 0 with no violations — verifies Ruff is correctly configured via `pyproject.toml`
 - [x] T015 [US3] Verify no legacy configuration files exist at the repository root: confirm absence of `setup.py`, `setup.cfg`, `tox.ini`, `.flake8`, `requirements.txt`, and `Pipfile`
 
 **Checkpoint**: User Story 3 complete — `pyproject.toml` is the single source of all project configuration; all tooling reads from it without additional files.
@@ -91,7 +91,7 @@
 **Purpose**: Final validation across all user stories
 
 - [x] T016 [P] Run `ruff format --check .` to confirm formatting baseline is clean
-- [x] T017 [P] Run `pytest -v` to confirm all tests pass and output is clear
+- [x] T017 [P] Run `uv run pytest -v` to confirm all tests pass and output is clear
 - [x] T018 Validate `quickstart.md` by executing each command in `specs/001-python-project-setup/quickstart.md` in sequence and confirming all exit 0
 - [x] T019 Confirm the project root contains only: `pyproject.toml`, `src/`, `tests/`, `specs/`, `.specify/`, `CLAUDE.md`, `.git/`, and `README.md` (if present) — no configuration file sprawl
 

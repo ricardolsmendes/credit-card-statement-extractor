@@ -44,7 +44,7 @@ specs/001-python-project-setup/
 ├── research.md          ← build backend, toolchain decisions
 ├── data-model.md        ← filesystem entities and pyproject.toml schema
 ├── quickstart.md        ← developer onboarding guide
-└── tasks.md             ← Phase 2 output (/speckit.tasks — not yet created)
+└── tasks.md             ← task list (/speckit.tasks output)
 ```
 
 ### Source Code (repository root)
