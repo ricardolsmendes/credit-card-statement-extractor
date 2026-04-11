@@ -92,7 +92,7 @@ A developer needs to check or modify project metadata (name, version, dependenci
 
 ## Assumptions
 
-- The project targets Python 3 (version unspecified; a reasonable modern default will be chosen during implementation)
+- The project targets Python ≥ 3.11 (the oldest actively maintained release as of 2026)
 - The `src` layout (placing packages inside a `src/` subdirectory rather than at the project root) is the intended convention, consistent with modern Python packaging best practices
 - No existing application code or test files need to be migrated; this is a greenfield setup
 - `uv` is the designated dependency manager; `pip` is not used for any project operation

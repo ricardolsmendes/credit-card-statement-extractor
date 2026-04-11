@@ -30,9 +30,9 @@
 
 **⚠️ CRITICAL**: Phases 3–5 depend on this phase completing successfully
 
-- [x] T004 Verify `pyproject.toml` is valid by running `python -m pip install --dry-run .` or `python -m build --no-isolation` and confirming no errors
-- [x] T005 Verify pytest discovers the `tests/` directory by running `pytest --collect-only` and confirming zero errors (empty collection is acceptable at this stage)
-- [x] T006 Verify the application package is importable by running `python -c "import credit_card_statement_extractor"` from the project root (requires `pip install -e .` or `pythonpath` set correctly)
+- [x] T004 Verify `pyproject.toml` is valid by running `uv sync --all-extras` and confirming no errors
+- [x] T005 Verify pytest discovers the `tests/` directory by running `uv run pytest --collect-only` and confirming zero errors (empty collection is acceptable at this stage)
+- [x] T006 Verify the application package is importable by running `uv run python -c "import credit_card_statement_extractor"` from the project root
 
 **Checkpoint**: Foundation valid — all three verification commands exit 0.
 
@@ -62,10 +62,10 @@
 ### Implementation for User Story 2
 
 - [x] T009 [US2] Create `tests/test_smoke.py` containing one trivial passing test (`def test_import(): from credit_card_statement_extractor import version; assert version`) to prove the full test pipeline works
-- [x] T010 [US2] Run `pytest` from the project root and confirm T009's test is discovered, executed, and passes — verifies `testpaths` and `pythonpath` in `pyproject.toml` are correctly configured
-- [x] T011 [US2] Run `pytest --collect-only` and confirm no warnings about import paths or missing `conftest.py` — verifies clean discovery with zero configuration overhead for contributors
+- [x] T010 [US2] Run `uv run pytest` from the project root and confirm T009's test is discovered, executed, and passes — verifies `testpaths` and `pythonpath` in `pyproject.toml` are correctly configured
+- [x] T011 [US2] Run `uv run pytest --collect-only` and confirm no warnings about import paths or missing `conftest.py` — verifies clean discovery with zero configuration overhead for contributors
 
-**Checkpoint**: User Story 2 complete — tests in `tests/` are auto-discovered and pass with a single `pytest` invocation.
+**Checkpoint**: User Story 2 complete — tests in `tests/` are auto-discovered and pass with a single `uv run pytest` invocation.
 
 ---
 

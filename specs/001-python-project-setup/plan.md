@@ -10,7 +10,7 @@ Create the foundational Python project structure: application source code under 
 ## Technical Context
 
 **Language/Version**: Python 3.11+  
-**Primary Dependencies**: `hatchling` (build), `pytest` (test), `ruff` (lint/format)  
+**Primary Dependencies**: `hatchling` (build), `uv` (dependency manager + venv), `pytest` (test), `ruff` (lint/format)  
 **Storage**: N/A  
 **Testing**: pytest  
 **Target Platform**: Cross-platform developer workstation  
@@ -29,7 +29,7 @@ Create the foundational Python project structure: application source code under 
 | Test-first: tests structure before app code | Pass | `tests/` established as first-class structure |
 | CLI contract unchanged | Pass | No CLI changes in this feature |
 | No speculative features | Pass | Minimal scaffolding only |
-| Dependencies are liabilities — add only essential | Pass | hatchling, pytest, ruff are all essential |
+| Dependencies are liabilities — add only essential | Pass | hatchling, uv, pytest, ruff are all essential |
 | No dead code / TODO-as-code | Pass | No implementation code in this feature |
 
 No violations. No complexity justification required.
@@ -67,4 +67,4 @@ credit-card-statement-extractor/
 2. `src/credit_card_statement_extractor/__init__.py` is a minimal file (empty or version string only).
 3. `tests/__init__.py` is empty — its presence makes the directory a package, which avoids import collisions when test files share names across subdirectories.
 4. No `requirements.txt`, `setup.py`, `setup.cfg`, or other legacy files.
-5. `pytest` and `ruff` are declared as development dependencies under `[project.optional-dependencies]` or a `[dependency-groups]` dev group — not as runtime dependencies.
+5. `pytest` and `ruff` are declared as development dependencies under `[project.optional-dependencies]` — not as runtime dependencies. Run `uv sync --all-extras` to install them; never use `pip install` directly.
