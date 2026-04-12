@@ -18,11 +18,11 @@
 
 **Purpose**: Add `pdfplumber` dependency and create the `pdf_reader` sub-package skeleton.
 
-- [ ] T001 Add `pdfplumber` dependency to `pyproject.toml` and run `uv sync`
-- [ ] T002 Create `src/credit_card_statement_extractor/pdf_reader/__init__.py` (empty, exports to be added later)
-- [ ] T003 [P] Create `tests/unit/pdf_reader/` directory with empty `__init__.py`
-- [ ] T004 [P] Create `tests/integration/pdf_reader/` directory with empty `__init__.py`
-- [ ] T005 [P] Add PDF test fixtures directory `tests/fixtures/pdfs/` and place a minimal single-page PDF (`single_page.pdf`) and a 2-page PDF (`multi_page.pdf`) in it — use any freely available sample PDF or generate with a script
+- [x] T001 Add `pdfplumber` dependency to `pyproject.toml` and run `uv sync`
+- [x] T002 Create `src/credit_card_statement_extractor/pdf_reader/__init__.py` (empty, exports to be added later)
+- [x] T003 [P] Create `tests/unit/pdf_reader/` directory with empty `__init__.py`
+- [x] T004 [P] Create `tests/integration/pdf_reader/` directory with empty `__init__.py`
+- [x] T005 [P] Add PDF test fixtures directory `tests/fixtures/pdfs/` and place a minimal single-page PDF (`single_page.pdf`) and a 2-page PDF (`multi_page.pdf`) in it — use any freely available sample PDF or generate with a script
 
 **Checkpoint**: `uv sync` succeeds; `import pdfplumber` works; fixture PDFs are in place.
 
@@ -32,9 +32,9 @@
 
 **Purpose**: Define the `PDFReader` Protocol and `PageResult` dataclass — shared types that all user stories depend on.
 
-- [ ] T006 [P] Write unit tests for `PageResult` in `tests/unit/pdf_reader/test_protocol.py`: (a) successful construction with valid `page_number` and `text`; (b) `page_number=0` raises `ValueError` (the dataclass enforces `page_number >= 1`); (c) mutating a frozen instance raises `FrozenInstanceError` — tests must FAIL (import will fail) until T007 is complete
-- [ ] T007 Create `src/credit_card_statement_extractor/pdf_reader/_protocol.py` containing: (a) `PageResult` frozen dataclass with `page_number: int` and `text: str`; add a `__post_init__` that raises `ValueError` if `page_number < 1`; (b) `PDFReader` Protocol decorated with `@runtime_checkable`, with method `read(path: Path) -> list[PageResult]`
-- [ ] T008 Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to export `PDFReader`, `PageResult`
+- [x] T006 [P] Write unit tests for `PageResult` in `tests/unit/pdf_reader/test_protocol.py`: (a) successful construction with valid `page_number` and `text`; (b) `page_number=0` raises `ValueError` (the dataclass enforces `page_number >= 1`); (c) mutating a frozen instance raises `FrozenInstanceError` — tests must FAIL (import will fail) until T007 is complete
+- [x] T007 Create `src/credit_card_statement_extractor/pdf_reader/_protocol.py` containing: (a) `PageResult` frozen dataclass with `page_number: int` and `text: str`; add a `__post_init__` that raises `ValueError` if `page_number < 1`; (b) `PDFReader` Protocol decorated with `@runtime_checkable`, with method `read(path: Path) -> list[PageResult]`
+- [x] T008 Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to export `PDFReader`, `PageResult`
 
 **Checkpoint**: `uv run pytest tests/unit/pdf_reader/test_protocol.py` passes; `PageResult` and `PDFReader` are importable from the package.
 
@@ -48,15 +48,15 @@
 
 ### Tests for User Story 1 ⚠️ Write FIRST — must FAIL before implementation
 
-- [ ] T009 [P] [US1] Write unit tests for `PdfplumberReader.read()` in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: single-page extraction returns one `PageResult`; multi-page returns one `PageResult` per page in order; page text is non-empty for fixture PDFs
-- [ ] T009b [P] [US1] Add a timing smoke test in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: extract `multi_page.pdf` fixture and assert elapsed time is under 2 seconds using `time.monotonic()`; add a comment: "lower-bound smoke test — SC-001 requires <5s for up to 50 pages; validate against a real statement-sized PDF when fixtures are available"
-- [ ] T010 [P] [US1] Write integration (CLI) tests in `tests/integration/pdf_reader/test_cli.py` using `subprocess`: valid single-page PDF → exit code 0 and `--- Page 1 ---` in stdout; valid multi-page PDF → exit code 0 and all page headers present
+- [x] T009 [P] [US1] Write unit tests for `PdfplumberReader.read()` in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: single-page extraction returns one `PageResult`; multi-page returns one `PageResult` per page in order; page text is non-empty for fixture PDFs
+- [x] T009b [P] [US1] Add a timing smoke test in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: extract `multi_page.pdf` fixture and assert elapsed time is under 2 seconds using `time.monotonic()`; add a comment: "lower-bound smoke test — SC-001 requires <5s for up to 50 pages; validate against a real statement-sized PDF when fixtures are available"
+- [x] T010 [P] [US1] Write integration (CLI) tests in `tests/integration/pdf_reader/test_cli.py` using `subprocess`: valid single-page PDF → exit code 0 and `--- Page 1 ---` in stdout; valid multi-page PDF → exit code 0 and all page headers present
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Create `src/credit_card_statement_extractor/pdf_reader/_pdfplumber_reader.py` implementing `PdfplumberReader` — satisfies the `PDFReader` Protocol; iterates `plumber.pages` lazily; returns `list[PageResult]`; raises `FileNotFoundError` for missing path, `ValueError` for unparseable PDF (depends on T007)
-- [ ] T012 [US1] Create `src/credit_card_statement_extractor/pdf_reader/__main__.py` — reads `sys.argv[1]` as file path, instantiates `PdfplumberReader`, calls `read()`, and prints `--- Page N ---\n<text>` for each page to stdout; exits with code 0 on success (depends on T011)
-- [ ] T013 [US1] Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to also export `PdfplumberReader`
+- [x] T011 [US1] Create `src/credit_card_statement_extractor/pdf_reader/_pdfplumber_reader.py` implementing `PdfplumberReader` — satisfies the `PDFReader` Protocol; iterates `plumber.pages` lazily; returns `list[PageResult]`; raises `FileNotFoundError` for missing path, `ValueError` for unparseable PDF (depends on T007)
+- [x] T012 [US1] Create `src/credit_card_statement_extractor/pdf_reader/__main__.py` — reads `sys.argv[1]` as file path, instantiates `PdfplumberReader`, calls `read()`, and prints `--- Page N ---\n<text>` for each page to stdout; exits with code 0 on success (depends on T011)
+- [x] T013 [US1] Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to also export `PdfplumberReader`
 
 **Checkpoint**: `uv run pytest tests/unit/pdf_reader/test_pdfplumber_reader.py tests/integration/pdf_reader/test_cli.py` passes; running the module manually prints page-separated text.
 
@@ -70,12 +70,12 @@
 
 ### Tests for User Story 2 ⚠️ Write FIRST — must FAIL before implementation
 
-- [ ] T014 [US2] Add a `tests/fixtures/pdfs/not_a_pdf.txt` fixture (any plain text file)
-- [ ] T015 [P] [US2] Extend `tests/integration/pdf_reader/test_cli.py` with error-path cases: no argument → exit code 1 and usage message on stderr; non-existent path → exit code 1 and "not found" on stderr; non-PDF file → exit code 2 and "could not parse" on stderr; verify stdout is empty in all error cases
+- [x] T014 [US2] Add a `tests/fixtures/pdfs/not_a_pdf.txt` fixture (any plain text file)
+- [x] T015 [P] [US2] Extend `tests/integration/pdf_reader/test_cli.py` with error-path cases: no argument → exit code 1 and usage message on stderr; non-existent path → exit code 1 and "not found" on stderr; non-PDF file → exit code 2 and "could not parse" on stderr; verify stdout is empty in all error cases
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Update `src/credit_card_statement_extractor/pdf_reader/__main__.py` to handle missing argument (print usage to stderr, exit 1), `FileNotFoundError` (print "Error: File not found: <path>" to stderr, exit 1), and `ValueError` (print "Error: Could not parse as PDF: <path>" to stderr, exit 2); ensure no tracebacks reach stderr (depends on T012)
+- [x] T016 [US2] Update `src/credit_card_statement_extractor/pdf_reader/__main__.py` to handle missing argument (print usage to stderr, exit 1), `FileNotFoundError` (print "Error: File not found: <path>" to stderr, exit 1), and `ValueError` (print "Error: Could not parse as PDF: <path>" to stderr, exit 2); ensure no tracebacks reach stderr (depends on T012)
 
 **Checkpoint**: `uv run pytest tests/integration/pdf_reader/test_cli.py` passes all error-path cases; running manually with bad inputs shows clean messages.
 
@@ -89,12 +89,12 @@
 
 ### Tests for User Story 3 ⚠️ Write FIRST — must FAIL before implementation
 
-- [ ] T017 [P] [US3] Write a structural test in `tests/unit/pdf_reader/test_protocol.py`: create a `NullReader` class inline that implements `PDFReader` Protocol (provides `read(path: Path) -> list[PageResult]`) without inheriting from any base class; assert `isinstance(NullReader(), PDFReader)` is `True` — this works because `PDFReader` is decorated with `@runtime_checkable` (see T007); confirms structural subtyping is active
+- [x] T017 [P] [US3] Write a structural test in `tests/unit/pdf_reader/test_protocol.py`: create a `NullReader` class inline that implements `PDFReader` Protocol (provides `read(path: Path) -> list[PageResult]`) without inheriting from any base class; assert `isinstance(NullReader(), PDFReader)` is `True` — this works because `PDFReader` is decorated with `@runtime_checkable` (see T007); confirms structural subtyping is active
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] Audit `src/credit_card_statement_extractor/pdf_reader/__main__.py` — confirm it references only `PDFReader`/`PageResult` types and the single concrete reader class; add an inline comment marking the one line to change to swap libraries (depends on T012)
-- [ ] T019 [US3] Update module-level docstring in `src/credit_card_statement_extractor/pdf_reader/__init__.py` to document the swap pattern: "To use a different PDF library, implement the `PDFReader` Protocol and update the import in `__main__.py`"
+- [x] T018 [US3] Audit `src/credit_card_statement_extractor/pdf_reader/__main__.py` — confirm it references only `PDFReader`/`PageResult` types and the single concrete reader class; add an inline comment marking the one line to change to swap libraries (depends on T012)
+- [x] T019 [US3] Update module-level docstring in `src/credit_card_statement_extractor/pdf_reader/__init__.py` to document the swap pattern: "To use a different PDF library, implement the `PDFReader` Protocol and update the import in `__main__.py`"
 
 **Checkpoint**: `uv run pytest tests/unit/pdf_reader/test_protocol.py` passes structural test; code review confirms single-point-of-change for library swap.
 
@@ -104,10 +104,10 @@
 
 **Purpose**: Final validation, linting, and verification against the quickstart.
 
-- [ ] T020 [P] Run `uv run ruff check . && uv run ruff format --check .` — fix any violations
-- [ ] T021 [P] Run full test suite `uv run pytest` — all tests must pass, no warnings
-- [ ] T022 Follow `specs/002-pdf-reader/quickstart.md` end-to-end: install deps, run against a real PDF, verify output matches expected format
-- [ ] T023 Verify exit code conventions match `specs/002-pdf-reader/contracts/cli-contract.md` — manually test each scenario
+- [x] T020 [P] Run `uv run ruff check . && uv run ruff format --check .` — fix any violations
+- [x] T021 [P] Run full test suite `uv run pytest` — all tests must pass, no warnings
+- [x] T022 Follow `specs/002-pdf-reader/quickstart.md` end-to-end: install deps, run against a real PDF, verify output matches expected format
+- [x] T023 Verify exit code conventions match `specs/002-pdf-reader/contracts/cli-contract.md` — manually test each scenario
 
 ---
 
