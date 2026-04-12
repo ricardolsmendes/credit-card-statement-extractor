@@ -32,8 +32,8 @@
 
 **Purpose**: Define the `PDFReader` Protocol and `PageResult` dataclass — shared types that all user stories depend on.
 
-- [ ] T006 Create `src/credit_card_statement_extractor/pdf_reader/_protocol.py` containing the `PageResult` frozen dataclass (`page_number: int`, `text: str`) and the `PDFReader` Protocol with method `read(path: Path) -> list[PageResult]`
-- [ ] T007 [P] Write unit tests for `PageResult` construction and field validation in `tests/unit/pdf_reader/test_protocol.py` — tests must FAIL before T006 is implemented
+- [ ] T006 [P] Write unit tests for `PageResult` construction and field validation in `tests/unit/pdf_reader/test_protocol.py` — must FAIL (import will fail) until T007 is complete
+- [ ] T007 Create `src/credit_card_statement_extractor/pdf_reader/_protocol.py` containing the `PageResult` frozen dataclass (`page_number: int`, `text: str`) and the `PDFReader` Protocol with method `read(path: Path) -> list[PageResult]`
 - [ ] T008 Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to export `PDFReader`, `PageResult`
 
 **Checkpoint**: `uv run pytest tests/unit/pdf_reader/test_protocol.py` passes; `PageResult` and `PDFReader` are importable from the package.
@@ -49,11 +49,12 @@
 ### Tests for User Story 1 ⚠️ Write FIRST — must FAIL before implementation
 
 - [ ] T009 [P] [US1] Write unit tests for `PdfplumberReader.read()` in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: single-page extraction returns one `PageResult`; multi-page returns one `PageResult` per page in order; page text is non-empty for fixture PDFs
+- [ ] T009b [P] [US1] Add a timing smoke test in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: extract `multi_page.pdf` fixture and assert elapsed time is under 5 seconds using `time.monotonic()` — satisfies SC-001 and Constitution §V benchmark tracking
 - [ ] T010 [P] [US1] Write integration (CLI) tests in `tests/integration/pdf_reader/test_cli.py` using `subprocess`: valid single-page PDF → exit code 0 and `--- Page 1 ---` in stdout; valid multi-page PDF → exit code 0 and all page headers present
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Create `src/credit_card_statement_extractor/pdf_reader/_pdfplumber_reader.py` implementing `PdfplumberReader` — satisfies the `PDFReader` Protocol; iterates `plumber.pages` lazily; returns `list[PageResult]`; raises `FileNotFoundError` for missing path, `ValueError` for unparseable PDF (depends on T006)
+- [ ] T011 [US1] Create `src/credit_card_statement_extractor/pdf_reader/_pdfplumber_reader.py` implementing `PdfplumberReader` — satisfies the `PDFReader` Protocol; iterates `plumber.pages` lazily; returns `list[PageResult]`; raises `FileNotFoundError` for missing path, `ValueError` for unparseable PDF (depends on T007)
 - [ ] T012 [US1] Create `src/credit_card_statement_extractor/pdf_reader/__main__.py` — reads `sys.argv[1]` as file path, instantiates `PdfplumberReader`, calls `read()`, and prints `--- Page N ---\n<text>` for each page to stdout; exits with code 0 on success (depends on T011)
 - [ ] T013 [US1] Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to also export `PdfplumberReader`
 
@@ -69,11 +70,11 @@
 
 ### Tests for User Story 2 ⚠️ Write FIRST — must FAIL before implementation
 
-- [ ] T014 [P] [US2] Extend `tests/integration/pdf_reader/test_cli.py` with error-path cases: no argument → exit code 1 and usage message on stderr; non-existent path → exit code 1 and "not found" on stderr; non-PDF file → exit code 2 and "could not parse" on stderr; verify stdout is empty in all error cases
+- [ ] T014 [US2] Add a `tests/fixtures/pdfs/not_a_pdf.txt` fixture (any plain text file)
+- [ ] T015 [P] [US2] Extend `tests/integration/pdf_reader/test_cli.py` with error-path cases: no argument → exit code 1 and usage message on stderr; non-existent path → exit code 1 and "not found" on stderr; non-PDF file → exit code 2 and "could not parse" on stderr; verify stdout is empty in all error cases
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Add a `tests/fixtures/pdfs/not_a_pdf.txt` fixture (any plain text file)
 - [ ] T016 [US2] Update `src/credit_card_statement_extractor/pdf_reader/__main__.py` to handle missing argument (print usage to stderr, exit 1), `FileNotFoundError` (print "Error: File not found: <path>" to stderr, exit 1), and `ValueError` (print "Error: Could not parse as PDF: <path>" to stderr, exit 2); ensure no tracebacks reach stderr (depends on T012)
 
 **Checkpoint**: `uv run pytest tests/integration/pdf_reader/test_cli.py` passes all error-path cases; running manually with bad inputs shows clean messages.
@@ -136,9 +137,9 @@
 ### Parallel Opportunities
 
 - T003, T004, T005 can run in parallel (Setup)
-- T007 (protocol tests) can be written in parallel with T006 (implementation), but tests must fail before implementation passes
-- T009, T010 (US1 tests) can be written in parallel with each other
-- T014 (US2 tests), T017 (US3 structural test) can be written in parallel once Phase 2 is done
+- T006 (protocol tests) can be written while reviewing the protocol design, but must fail before T007 implementation is complete
+- T009, T009b, T010 (US1 tests) can be written in parallel with each other
+- T015 (US2 tests), T017 (US3 structural test) can be written in parallel once Phase 2 is done
 - T020, T021 (linting + test suite) can run in parallel in Polish phase
 
 ---
@@ -147,12 +148,13 @@
 
 ```bash
 # Write tests in parallel (different files, no shared state):
-Task T009: "Unit tests for PdfplumberReader in tests/unit/pdf_reader/test_pdfplumber_reader.py"
-Task T010: "CLI integration tests in tests/integration/pdf_reader/test_cli.py"
+Task T009:  "Unit tests for PdfplumberReader in tests/unit/pdf_reader/test_pdfplumber_reader.py"
+Task T009b: "Timing smoke test (SC-001) in tests/unit/pdf_reader/test_pdfplumber_reader.py"
+Task T010:  "CLI integration tests in tests/integration/pdf_reader/test_cli.py"
 
 # Then implement sequentially:
-Task T011: "_pdfplumber_reader.py"
-Task T012: "__main__.py"  (depends on T011)
+Task T011: "_pdfplumber_reader.py"  (depends on T007)
+Task T012: "__main__.py"            (depends on T011)
 ```
 
 ---

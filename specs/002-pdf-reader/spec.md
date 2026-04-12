@@ -89,7 +89,7 @@ A developer wants to compare the text extraction results of two different PDF-re
 
 ## Assumptions
 
-- The initial library choice is **pypdf** (formerly PyPDF2), a widely-used, actively maintained, pure-Python PDF library suitable for text extraction from digitally-generated PDFs such as credit card statements.
+- The initial library choice is **pdfplumber**, a widely-used, actively maintained library built on `pdfminer.six` that provides layout-aware text extraction well-suited for the tabular and multi-column content found in credit card statements.
 - The tool is used by developers for verification purposes, not end users; a minimal console interface is sufficient.
 - PDFs are expected to be digitally generated (not scanned images), so text extraction without OCR is the primary use case.
 - Password-protected and image-only PDFs are out of scope for this initial version; a clear message noting the limitation is acceptable.
