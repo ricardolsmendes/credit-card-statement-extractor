@@ -32,8 +32,8 @@
 
 **Purpose**: Define the `PDFReader` Protocol and `PageResult` dataclass — shared types that all user stories depend on.
 
-- [ ] T006 [P] Write unit tests for `PageResult` construction and field validation in `tests/unit/pdf_reader/test_protocol.py` — must FAIL (import will fail) until T007 is complete
-- [ ] T007 Create `src/credit_card_statement_extractor/pdf_reader/_protocol.py` containing the `PageResult` frozen dataclass (`page_number: int`, `text: str`) and the `PDFReader` Protocol with method `read(path: Path) -> list[PageResult]`
+- [ ] T006 [P] Write unit tests for `PageResult` in `tests/unit/pdf_reader/test_protocol.py`: (a) successful construction with valid `page_number` and `text`; (b) `page_number=0` raises `ValueError` (the dataclass enforces `page_number >= 1`); (c) mutating a frozen instance raises `FrozenInstanceError` — tests must FAIL (import will fail) until T007 is complete
+- [ ] T007 Create `src/credit_card_statement_extractor/pdf_reader/_protocol.py` containing: (a) `PageResult` frozen dataclass with `page_number: int` and `text: str`; add a `__post_init__` that raises `ValueError` if `page_number < 1`; (b) `PDFReader` Protocol decorated with `@runtime_checkable`, with method `read(path: Path) -> list[PageResult]`
 - [ ] T008 Update `src/credit_card_statement_extractor/pdf_reader/__init__.py` to export `PDFReader`, `PageResult`
 
 **Checkpoint**: `uv run pytest tests/unit/pdf_reader/test_protocol.py` passes; `PageResult` and `PDFReader` are importable from the package.
@@ -49,7 +49,7 @@
 ### Tests for User Story 1 ⚠️ Write FIRST — must FAIL before implementation
 
 - [ ] T009 [P] [US1] Write unit tests for `PdfplumberReader.read()` in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: single-page extraction returns one `PageResult`; multi-page returns one `PageResult` per page in order; page text is non-empty for fixture PDFs
-- [ ] T009b [P] [US1] Add a timing smoke test in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: extract `multi_page.pdf` fixture and assert elapsed time is under 5 seconds using `time.monotonic()` — satisfies SC-001 and Constitution §V benchmark tracking
+- [ ] T009b [P] [US1] Add a timing smoke test in `tests/unit/pdf_reader/test_pdfplumber_reader.py`: extract `multi_page.pdf` fixture and assert elapsed time is under 2 seconds using `time.monotonic()`; add a comment: "lower-bound smoke test — SC-001 requires <5s for up to 50 pages; validate against a real statement-sized PDF when fixtures are available"
 - [ ] T010 [P] [US1] Write integration (CLI) tests in `tests/integration/pdf_reader/test_cli.py` using `subprocess`: valid single-page PDF → exit code 0 and `--- Page 1 ---` in stdout; valid multi-page PDF → exit code 0 and all page headers present
 
 ### Implementation for User Story 1
@@ -89,7 +89,7 @@
 
 ### Tests for User Story 3 ⚠️ Write FIRST — must FAIL before implementation
 
-- [ ] T017 [P] [US3] Write a structural test in `tests/unit/pdf_reader/test_protocol.py`: create a `NullReader` class inline that implements `PDFReader` Protocol; assert it passes `isinstance(NullReader(), PDFReader)` (or equivalent runtime check) without inheriting from any base class — confirms the Protocol is correctly defined for structural subtyping
+- [ ] T017 [P] [US3] Write a structural test in `tests/unit/pdf_reader/test_protocol.py`: create a `NullReader` class inline that implements `PDFReader` Protocol (provides `read(path: Path) -> list[PageResult]`) without inheriting from any base class; assert `isinstance(NullReader(), PDFReader)` is `True` — this works because `PDFReader` is decorated with `@runtime_checkable` (see T007); confirms structural subtyping is active
 
 ### Implementation for User Story 3
 
