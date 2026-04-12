@@ -1,8 +1,10 @@
 # credit-card-statement-extractor Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-11
+Auto-generated from all feature plans. Last updated: 2026-04-12
 
 ## Active Technologies
+- Python 3.11+ + `pdfplumber` (text extraction); `pdfminer.six` (transitive, pulled by pdfplumber) (feat/002-pdf-reader)
+- N/A — file system read-only (feat/002-pdf-reader)
 
 - Python 3.11+ + `hatchling` (build), `uv` (dependency manager + venv), `pytest` (test), `ruff` (lint/format) (main)
 
@@ -27,6 +29,7 @@ uv run ruff format .   # format
 Python 3.11+: Follow standard conventions
 
 ## Recent Changes
+- feat/002-pdf-reader: Added Python 3.11+ + `pdfplumber` (text extraction); `pdfminer.six` (transitive, pulled by pdfplumber)
 
 - main: Added Python 3.11+ + `hatchling` (build), `pytest` (test), `ruff` (lint/format)
 
