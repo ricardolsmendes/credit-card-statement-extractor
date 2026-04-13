@@ -1,0 +1,2 @@
+This is a plain text file, not a PDF.
+It should trigger a parse error when passed to the PDF reader.
