@@ -35,7 +35,7 @@ A developer wants to see transaction output formatted according to their locale.
 
 1. **Given** the user runs the application without specifying a language, **When** transactions are printed, **Then** output labels and formatting follow English conventions.
 2. **Given** the user specifies Brazilian Portuguese as the output language, **When** transactions are printed, **Then** column labels appear in Portuguese, amounts use R$ with comma-decimal formatting, and dates use dd/mm/yyyy.
-3. **Given** the user specifies English as the output language, **When** transactions are printed, **Then** column labels appear in English, amounts use standard English number formatting, and dates use a human-readable English format.
+3. **Given** the user specifies English as the output language, **When** transactions are printed, **Then** column labels appear in English, amounts use standard English number formatting, and dates use YYYY-MM-DD format.
 
 ---
 
