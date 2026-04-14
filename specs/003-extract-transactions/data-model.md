@@ -13,6 +13,7 @@ A single financial event parsed from a credit card statement.
 | `date` | `datetime.date` | Required | Parsed from statement; format-agnostic at storage level |
 | `description` | `str` | Required; non-empty after strip | Merchant name or transaction narrative |
 | `amount` | `decimal.Decimal` | Required | Positive = purchase/charge; Negative = payment/credit/refund |
+| `beneficiary` | `str \| None` | Optional; default `None` | Present only when source statement includes a "Beneficiário" column (FR-014) |
 
 **Frozen dataclass** (`frozen=True`): immutable after construction; safe to cache or hash.
 
@@ -20,6 +21,7 @@ A single financial event parsed from a credit card statement.
 - `description` must not be empty after stripping whitespace.
 - `amount` precision is preserved from the source string (e.g., `-49.90` stored as `Decimal('-49.90')`).
 - No restriction on `amount` sign — both positive and negative values are valid.
+- `beneficiary` may be `None` (column absent) or an empty string (column present but cell blank); both are valid.
 
 **No identity key**: Two transactions may share the same date and description (e.g., two identical coffee purchases). Order is preserved as-read (FR-005).
 
@@ -39,6 +41,7 @@ Display configuration for a single output language/region.
 | `col_date` | `str` | Required | Column header label for Date column |
 | `col_description` | `str` | Required | Column header label for Description column |
 | `col_amount` | `str` | Required | Column header label for Amount column |
+| `col_beneficiary` | `str` | Required | Column header label for Beneficiary column (used only when column is present); English: `"Beneficiary"`, pt-BR: `"Beneficiário"` |
 
 **Frozen dataclass**. Two pre-built instances exported from `_locale.py`:
 - `LOCALE_EN`: English defaults (ISO date, no currency prefix)
@@ -51,12 +54,13 @@ Display configuration for a single output language/region.
 Structural interface for pluggable parsers (mirrors `PDFReader` pattern from feature 002).
 
 ```
-TransactionParser.parse(pages: list[PageResult]) -> list[Transaction]
+TransactionParser.parse(pages: list[PageResult]) -> tuple[list[Transaction], int]
 ```
 
 - Input: one `PageResult` per page from the `pdf_reader` module.
-- Output: ordered list of `Transaction` objects (order matches source document).
-- Raises `ValueError` if no transactions can be extracted.
+- Output: `(transactions, skipped_count)` — ordered list of `Transaction` objects plus the number of unrecognised lines after the header.
+- Raises `ValueError` if no transaction table header is found.
+- `Transaction.beneficiary` is populated when the source statement includes a `"Beneficiário"` column; `None` otherwise.
 
 **Concrete implementation** (this feature): `DefaultParser` in `_parser.py`.
 

@@ -123,16 +123,81 @@
 
 ---
 
+## Phase 7: FR-013 — pt-BR Long Date Format Support
+
+**Goal**: The parser correctly handles dates written as `14 de mar. 2026` (and `14 de mar 2026` without trailing period), as found in real Brazilian credit card statements.
+
+**Independent Test**: Run `python -m credit_card_statement_extractor.transaction_extractor real_statement.pdf --lang pt-BR` where `real_statement.pdf` contains transactions with long pt-BR dates — confirm transactions are extracted with dates displayed in DD/MM/YYYY format.
+
+### Fixture
+
+- [ ] T030 Update `tests/fixtures/statements/create_fixtures.py` — add TWO new fixtures: (1) `ptbr_long_date_statement.pdf`: pt-BR headers (`Data Movimentação Valor`, NO Beneficiário column), 2 transactions with dates in long format (`14 de mar. 2026`) and amounts as raw numeric strings in pt-BR format (`- 85,91`); this fixture is used by Phase 7 tests only; (2) `ptbr_long_date_beneficiary_statement.pdf`: pt-BR headers (`Data Movimentação Beneficiário Valor`), 2 transactions with long dates and beneficiary values matching the real statement (`DrinksEBar`, `Posto de Gasolina`), amounts as `- 85,91` and `- 169,66`; this fixture is used by Phase 8 tests; regenerate all fixtures by re-running the script (T031)
+- [ ] T031 Run `tests/fixtures/statements/create_fixtures.py` to regenerate fixtures including both new fixtures
+
+### Tests for FR-013
+
+> **NOTE: Write tests FIRST — confirm they FAIL before proceeding to implementation.**
+
+- [ ] T032 [P] [US1] Add unit tests to `tests/unit/transaction_extractor/test_parser.py` — (a) `_parse_date` function: `"14 de mar. 2026"` → `date(2026, 3, 14)`; `"14 de mar 2026"` (no period) → `date(2026, 3, 14)`; all 12 month abbreviations parse to correct month numbers; unknown abbreviation raises `ValueError`; (b) `_normalise_amount` function: `"- R$ 85,91"` → `Decimal('-85.91')`; `"- R$ 1.234,56"` → `Decimal('-1234.56')`; plain `"85,91"` (no prefix) still works — confirming currency-prefix stripping does not break the existing path; (c) `DefaultParser.parse()` end-to-end: given a `PageResult` whose text contains `Data Movimentação Valor` header followed by a line `14 de mar. 2026  DrinksEBar  85,91`, the parser returns 1 transaction with `date(2026, 3, 14)` — confirming the full parse pipeline works for long-format dates; also test a `PageResult` with both a long-format and a numeric-format date on the same page to confirm both parse correctly (mixed-format edge case)
+- [ ] T033 [US1] Add integration test to `tests/integration/transaction_extractor/test_cli.py` — run CLI on `ptbr_long_date_statement.pdf` (NO Beneficiário column) `--lang pt-BR`; confirm exit 0, dates appear as `14/03/2026` in output, transaction count matches fixture (2 transactions)
+
+### Implementation for FR-013
+
+- [ ] T034 [US1] Update `src/credit_card_statement_extractor/transaction_extractor/_parser.py` — three coordinated changes: (1) update `_TXN_RE` to add an alternation for the long pt-BR date prefix: `(\d{1,2} de \w+\.?\s+\d{4}|\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{4}[/\-]\d{1,2}[/\-]\d{1,2})`; (2) update `_parse_date()` to try the long format first: detect via `" de "` in the string, strip trailing period from month token, map lowercase abbreviation to month number via a 12-entry dict (`jan`→1 … `dez`→12), raise `ValueError` for unknown abbreviation; fall through to existing numeric formats if no long-format match; (3) update `_normalise_amount()` to strip any leading currency prefix before parsing: remove optional `R\$\s*` or `\$\s*` prefix after the sign, so that `- R$ 85,91` normalises to `Decimal('-85.91')` — T032 tests must pass
+
+**Checkpoint**: Statements with long pt-BR dates are parsed correctly.
+
+---
+
+## Phase 8: FR-014 — Beneficiário Column Support
+
+**Goal**: When a statement has a `Beneficiário` column, its value is captured per transaction and displayed as an additional column in the output between Date and Description (or Descrição). Statements without this column are unaffected.
+
+**Independent Test**: Run CLI on a fixture with a `Beneficiário` column — confirm the output table includes the Beneficiário/Beneficiary column; run on a fixture without it — confirm the column is absent.
+
+### Tests for FR-014
+
+> **NOTE: Write tests FIRST — confirm they FAIL before proceeding to implementation.**
+
+- [ ] T035 [P] [US1] Add unit tests to `tests/unit/transaction_extractor/test_models.py` — `Transaction` with `beneficiary="DrinksEBar"` stores value correctly; `Transaction` without beneficiary (default) has `beneficiary=None`; frozen dataclass still raises on mutation; `Transaction.__post_init__` does not reject `None` beneficiary
+- [ ] T036 [P] [US1] Add unit tests to `tests/unit/transaction_extractor/test_locale.py` — `LOCALE_EN` has `col_beneficiary="Beneficiary"`; `LOCALE_PT_BR` has `col_beneficiary="Beneficiário"`
+- [ ] T037 [P] [US1] Add unit tests to `tests/unit/transaction_extractor/test_formatter.py` — `Formatter.render()` with `has_beneficiary=True`: output header contains "Beneficiário" (pt-BR) / "Beneficiary" (en) between date and description columns; with `has_beneficiary=False`: beneficiary column absent from header and all rows; beneficiary column is left-aligned with dynamic width
+- [ ] T038 [US1] Add unit tests to `tests/unit/transaction_extractor/test_parser.py` — `DefaultParser.parse()` on header `"Data Movimentação Beneficiário Valor"`: returns transactions where `beneficiary` matches source values; `DefaultParser.parse()` on header without Beneficiário: all transactions have `beneficiary=None`; `_is_header_line()` recognises `"Beneficiário"` as a valid header token without confusing it for a description synonym
+
+### Implementation for FR-014
+
+- [ ] T039 [US1] Update `src/credit_card_statement_extractor/transaction_extractor/_models.py` — add `beneficiary: str | None = None` field to `Transaction` frozen dataclass (after `description`, before `amount`); update `__post_init__` to not validate beneficiary (None is valid) — T035 tests must pass
+- [ ] T040 [US1] Update `src/credit_card_statement_extractor/transaction_extractor/_locale.py` — add `col_beneficiary: str` field to `LocaleConfig` dataclass; set `col_beneficiary="Beneficiary"` in `LOCALE_EN` and `col_beneficiary="Beneficiário"` in `LOCALE_PT_BR` — depends on T039; T036 tests must pass
+- [ ] T041 [US1] Update `src/credit_card_statement_extractor/transaction_extractor/_parser.py` — in `_is_header_line()`: add `"beneficiário"` to a separate `_BENEFICIARY_HEADERS` frozenset (do NOT add to `_DESCRIPTION_HEADERS`); in `DefaultParser.parse()`: when scanning the header line, record the token index of the beneficiary header if present; during transaction-row parsing, split the row on `\s{2,}` and extract the token at that index as `beneficiary` (empty string if token missing); pass `beneficiary` to `Transaction()` constructor — T038 tests must pass
+- [ ] T042 [US1] Update `src/credit_card_statement_extractor/transaction_extractor/_formatter.py` — `Formatter.render()` gains a `has_beneficiary: bool` parameter (default `False`); when `True`, insert beneficiary column between date and description columns using `locale.col_beneficiary` as header, dynamic width (min 12), left-aligned — T037 tests must pass
+- [ ] T043 [US1] Update `src/credit_card_statement_extractor/transaction_extractor/__main__.py` — after `parser.parse()`, detect `has_beneficiary` by checking whether any `Transaction.beneficiary is not None`; pass `has_beneficiary` to `Formatter.render()`
+- [ ] T044 [US1] Add integration tests to `tests/integration/transaction_extractor/test_cli.py` — (a) CLI on `ptbr_long_date_beneficiary_statement.pdf --lang pt-BR`: "Beneficiário" column present in stdout, beneficiary values `DrinksEBar` and `Posto de Gasolina` appear in output, dates appear as `14/03/2026`; (b) CLI on `ptbr_statement.pdf --lang pt-BR`: no "Beneficiário" column in stdout; (c) CLI on `en_statement.pdf`: no "Beneficiary" column in stdout
+
+**Checkpoint**: Beneficiário column is captured and displayed when present; absent statements unaffected.
+
+---
+
+## Phase 9: Validation
+
+- [ ] T045 [P] Run `uv run pytest` — confirm all unit and integration tests pass with zero failures
+- [ ] T046 [P] Run `uv run ruff check .` and `uv run ruff format .` — confirm zero linting or formatting violations
+- [ ] T047 Validate updated `quickstart.md` scenarios against actual CLI output: pt-BR with Beneficiário column, pt-BR without Beneficiário column, English output
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: No dependencies — start immediately
-- **Foundational (Phase 2)**: Depends on Phase 1
-- **US1 (Phase 3)**: Depends on Phase 2 (fixtures must exist before integration tests)
-- **US2 (Phase 4)**: Depends on Phase 3 (locale extends the formatter built in US1)
-- **US3 (Phase 5)**: Depends on Phase 3 (error paths extend `__main__.py` from US1)
-- **Polish (Phase 6)**: Depends on Phases 3–5 complete
+- **Setup (Phase 1)**: No dependencies — start immediately ✅
+- **Foundational (Phase 2)**: Depends on Phase 1 ✅
+- **US1 (Phase 3)**: Depends on Phase 2 ✅
+- **US2 (Phase 4)**: Depends on Phase 3 ✅
+- **US3 (Phase 5)**: Depends on Phase 3 ✅
+- **Polish (Phase 6)**: Depends on Phases 3–5 ✅
+- **FR-013 (Phase 7)**: Depends on Phase 3 (extends `_parser.py` date handling); T031 depends on T030; T033 depends on T031; T034 depends on T032
+- **FR-014 (Phase 8)**: Depends on Phase 7 (T030/T031 must run first to generate both fixtures); uses `ptbr_long_date_beneficiary_statement.pdf` (created in T030); T039 → T040 → T041 → T042 → T043 → T044; T035/T036/T037/T038 are parallel test tasks
+- **Validation (Phase 9)**: Depends on Phases 7–8 complete
 
 ### Within Each Phase
 
@@ -140,6 +205,7 @@
 - Models before services (`_models.py` before `_parser.py`)
 - Protocol before concrete implementation (`_protocol.py` before `_parser.py`)
 - Core components before CLI (`_parser.py`, `_formatter.py` before `__main__.py`)
+- Within Phase 8: T039 (`_models.py`) → T040 (`_locale.py`) (sequential) → T041 (`_parser.py`) → T042 (`_formatter.py`) → T043 (`__main__.py`) → T044 (integration tests)
 
 ### Parallel Opportunities
 
@@ -194,3 +260,7 @@ Task T012: _formatter.py  # depends on T007
 - `DefaultParser.parse()` return type changes in T024 (adds skip count) — all call sites updated as part of T024; T025 (__main__.py) depends on T024 completing first
 - Statement fixture PDFs in `tests/fixtures/statements/` are the ground truth for parser correctness tests
 - `_parser.py` header detection must recognise all variants documented in spec.md Clarifications
+- Phase 7 (T034): Three coordinated changes — `_TXN_RE` updated to match long-date prefix; `_parse_date` updated to parse "DD de MMM. YYYY"; `_normalise_amount` updated to strip `R$ ` / `$ ` currency prefix from input amounts (e.g., `- R$ 85,91` → `Decimal('-85.91')`). All three must be done together
+- Phase 8 (T041): `"Beneficiário"` belongs in `_BENEFICIARY_HEADERS` — NOT in `_DESCRIPTION_HEADERS`; header detection (`_is_header_line`) should NOT require a beneficiary column to validate a header row
+- Phase 8 (T039): `Transaction.beneficiary` is an optional field with default `None`; frozen dataclass constraint still applies
+- Phase 8 (T042/T043): `has_beneficiary` is derived at runtime from whether any parsed transaction has a non-None beneficiary; it is NOT passed as a CLI argument

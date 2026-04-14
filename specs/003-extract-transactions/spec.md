@@ -82,7 +82,7 @@ A developer runs the application with a PDF whose transaction layout cannot be p
 - **FR-011**: The application MUST print a warning to stderr and continue when some transaction lines cannot be parsed, displaying the successfully extracted transactions.
 - **FR-012**: The application MUST exit with a non-zero status code when a fatal error occurs.
 - **FR-013**: The parser MUST recognise transaction dates expressed in the Brazilian Portuguese long format "DD de MMM. YYYY" (e.g., "14 de mar. 2026"), where the month abbreviation follows standard pt-BR three-letter month abbreviations (jan, fev, mar, abr, mai, jun, jul, ago, set, out, nov, dez), with or without a trailing period.
-- **FR-014**: The parser MUST recognise "Beneficiário" as an optional, distinct column in the transaction table — separate from the description column. When present, its value MUST be captured per transaction. When absent, the beneficiary attribute for each transaction is empty.
+- **FR-014**: The parser MUST recognise "Beneficiário" as an optional, distinct column in the transaction table — separate from the description column. When the column is present in the source statement, its value MUST be captured per transaction (an empty string `""` if a cell is blank). When the column is absent from the source statement entirely, the beneficiary attribute for each transaction is `None`.
 
 ### Key Entities
 
@@ -94,7 +94,7 @@ A developer runs the application with a PDF whose transaction layout cannot be p
 
 ### Measurable Outcomes
 
-- **SC-001**: A developer can run a single command and view all transactions from a real credit card statement within 10 seconds, regardless of statement size up to 50 pages.
+- **SC-001**: A developer can run a single command and view all transactions from a real credit card statement within 2 seconds on standard hardware, regardless of statement size up to 50 pages.
 - **SC-002**: Every transaction visible in the source PDF appears exactly once in the output — no duplicates and no omissions for recognised transaction lines.
 - **SC-003**: Switching the output language (English ↔ Brazilian Portuguese) changes the display format without requiring code changes — a single user-facing option controls all locale-specific formatting.
 - **SC-004**: The application never exposes raw tracebacks to the user; every failure produces a distinct, actionable error message.

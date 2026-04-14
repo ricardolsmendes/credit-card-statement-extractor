@@ -1,6 +1,6 @@
 # CLI Contract: Transaction Extractor
 
-**Feature**: 003-extract-transactions | **Date**: 2026-04-12
+**Feature**: 003-extract-transactions | **Date**: 2026-04-14 (updated: long date format + Beneficiário column)
 
 ---
 
@@ -34,7 +34,7 @@ python -m credit_card_statement_extractor.transaction_extractor <file_path> [--l
 
 ## Standard Output (exit 0)
 
-A fixed-width table printed to stdout. Format (English example):
+A fixed-width table printed to stdout. Format (English example, no beneficiary column):
 
 ```
 Date        Description                    Amount
@@ -44,14 +44,13 @@ Date        Description                    Amount
 2026-03-10  Payment received                  +500.00
 ```
 
-Brazilian Portuguese example (`--lang pt-BR`):
+Brazilian Portuguese example with beneficiary column (`--lang pt-BR`):
 
 ```
-Data        Descrição                      Valor
-----------  -----------------------------  -----------
-01/03/2026  Coffee Shop                     -R$ 4,50
-02/03/2026  Supermercado ABC               -R$ 82,10
-10/03/2026  Pagamento recebido            +R$ 500,00
+Data        Beneficiário              Descrição                      Valor
+----------  ------------------------  -----------------------------  -----------
+14/03/2026  DrinksEBar                                          -R$ 85,91
+14/03/2026  Posto de Gasolina                                      -R$ 169,66
 ```
 
 **Formatting rules**:
@@ -59,10 +58,12 @@ Data        Descrição                      Valor
 - Second row: separator line of `-` characters matching column widths.
 - Subsequent rows: one transaction per line.
 - Date column: left-aligned; width = max(len(formatted_date), len(label)).
+- Beneficiary column (optional — only when source statement has a "Beneficiário" column): left-aligned; width = max(len(beneficiary), len(label)); inserted between Date and Description (FR-014).
 - Description column: left-aligned; width = max(len(description), len(label)).
 - Amount column: right-aligned; width = max(len(formatted_amount), len(label)).
 - Columns separated by two spaces.
 - Negative amounts prefixed with `-`; non-negative amounts prefixed with `+` (FR-008).
+- Transaction dates from pt-BR long format (`14 de mar. 2026`) are normalised to the output locale's date format before display (FR-013).
 
 ---
 

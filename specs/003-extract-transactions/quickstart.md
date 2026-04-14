@@ -35,11 +35,23 @@ Date        Description                    Amount
 
 ## Extract transactions (Brazilian Portuguese output)
 
+Statements with dates in long pt-BR format (`14 de mar. 2026`) are handled automatically.  
+When the statement contains a `Beneficiário` column, it is shown between Date and Descrição.
+
 ```bash
 python -m credit_card_statement_extractor.transaction_extractor statement.pdf --lang pt-BR
 ```
 
-Expected output:
+Expected output (statement with Beneficiário column and long dates):
+
+```
+Data        Beneficiário              Descrição  Valor
+----------  ------------------------  ---------  -----------
+14/03/2026  DrinksEBar                            -R$ 85,91
+14/03/2026  Posto de Gasolina                    -R$ 169,66
+```
+
+Expected output (statement without Beneficiário column):
 
 ```
 Data        Descrição                      Valor

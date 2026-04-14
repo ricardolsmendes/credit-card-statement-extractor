@@ -72,9 +72,30 @@
 
 ## Decision 6: Date parsing — multiple format attempts
 
-**Decision**: Try date formats in priority order: `%d/%m/%Y` → `%Y-%m-%d` → `%m/%d/%Y` → `%d/%m/%y`. First successful parse wins. Raise `ValueError` if none match.
+**Decision**: Try date formats in order: pt-BR long (`DD de MMM. YYYY`) → `%d/%m/%Y` → `%Y-%m-%d` → `%m/%d/%Y` → `%d/%m/%y`. First successful parse wins. Raise `ValueError` if none match.
 
-**Rationale**: The same parser handles both English and pt-BR source PDFs. Trying the most common pt-BR format first minimises the risk of ambiguous dates (e.g., `01/03/2026` parsed as January 3 instead of March 1 under `%m/%d/%Y`). ISO 8601 format is unambiguous and checked second.
+**Rationale**: The real sample statement uses `14 de mar. 2026` — a written long format not handled by strptime date directives alone. This format is unambiguous (named month, no separator confusion) so it is tried first. The pt-BR long format is parsed with a custom function: split on `" de "`, normalise the month abbreviation (strip trailing period, lowercase, map via a fixed 12-entry dict to a month number), then construct a `datetime.date`. The existing numeric formats follow in the same priority order as before. ISO 8601 is unambiguous and checked after pt-BR numeric.
+
+**Month abbreviation map** (FR-013):
+```
+jan→1  fev→2  mar→3  abr→4  mai→5  jun→6
+jul→7  ago→8  set→9  out→10  nov→11  dez→12
+```
+Both `mar` and `mar.` are accepted (trailing period stripped before lookup).
+
+---
+
+## Decision 8: Beneficiary column — detection and optional capture (FR-014)
+
+**Decision**: During header-row scanning, detect the presence of a `"Beneficiário"` column token. If found, record its position (column index in the split token list). During transaction-row parsing, extract the token at that position as `beneficiary`. The `Transaction` dataclass gains an optional `beneficiary: str | None = None` field. `LocaleConfig` gains a `col_beneficiary: str` field (English: `"Beneficiary"`, pt-BR: `"Beneficiário"`). `Formatter.render()` accepts a boolean `has_beneficiary` flag and inserts the column between description and amount only when `True`.
+
+**Rationale**: "Beneficiário" is a distinct column in some pt-BR statements, not a description synonym (FR-014). Making it optional in the data model avoids breaking statements that lack it. Position-based extraction is needed because the beneficiary value appears between the description and amount in the raw text line.
+
+**Column position approach**: The header line is split on `\s{2,}` (two or more spaces) to obtain labelled tokens. The index of the `Beneficiário` token is remembered. Transaction lines are split on the same delimiter and the token at that index (if present) is the beneficiary value. This is robust against variable spacing without requiring per-format column-width configuration.
+
+**Alternatives considered**:
+- Regex named group for beneficiary: Rejected — the beneficiary is free text and its position is only determinable from the header; a fixed-position group in the transaction regex would be fragile.
+- Always include `beneficiary` field in output table: Rejected — FR-004 specifies the column is omitted when not present in the source.
 
 ---
 

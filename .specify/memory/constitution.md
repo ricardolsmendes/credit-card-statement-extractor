@@ -17,7 +17,7 @@ TDD mandatory: tests written and approved before implementation begins. Red → 
 
 ### IV. User Experience Consistency
 - CLI interface is the primary contract: stdin/args → stdout, errors → stderr
-- Output is deterministic and machine-readable by default (JSON); human-readable format available via flag
+- Output is deterministic. For web/API services: machine-readable by default (JSON) with human-readable available via flag. For CLI tools whose primary value is human inspection of financial data (e.g., statement extractors): human-readable tabular output is the default; a machine-readable flag may be added when a concrete downstream consumer exists (YAGNI).
 - Error messages are actionable — they tell the user what went wrong and how to fix it
 - Exit codes are meaningful and documented: 0 = success, 1 = user error, 2 = parse failure, 3 = internal error
 - No silent failures; every error path produces output
@@ -50,4 +50,4 @@ Start with the simplest thing that works. YAGNI: no speculative features, no pre
 
 This constitution supersedes all other practices in this repository. Amendments require a documented rationale, approval, and a migration plan for any affected code. All PRs must verify compliance with these principles. The constitution is a living document — revisit it when the project outgrows it, not before.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-10 | **Last Amended**: 2026-04-10
+**Version**: 1.0.1 | **Ratified**: 2026-04-10 | **Last Amended**: 2026-04-14 — §IV scoped: human-readable default permitted for CLI tools whose primary value is human inspection; JSON default retained for web/API services.
