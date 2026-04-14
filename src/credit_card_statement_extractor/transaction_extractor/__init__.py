@@ -1,5 +1,6 @@
 """Transaction extractor — public API."""
 
+from credit_card_statement_extractor.transaction_extractor._exporter import Exporter
 from credit_card_statement_extractor.transaction_extractor._formatter import Formatter
 from credit_card_statement_extractor.transaction_extractor._locale import (
     LOCALE_EN,
@@ -13,6 +14,7 @@ from credit_card_statement_extractor.transaction_extractor._protocol import (
 )
 
 __all__ = [
+    "Exporter",
     "Formatter",
     "LOCALE_EN",
     "LOCALE_PT_BR",
