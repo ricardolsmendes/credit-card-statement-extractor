@@ -109,8 +109,9 @@ def main() -> None:
             file=sys.stderr,
         )
 
+    has_beneficiary = any(t.beneficiary is not None for t in transactions)
     formatter = Formatter()
-    print(formatter.render(transactions, locale))
+    print(formatter.render(transactions, locale, has_beneficiary=has_beneficiary))
 
 
 if __name__ == "__main__":

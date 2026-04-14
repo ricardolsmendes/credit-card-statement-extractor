@@ -1,4 +1,4 @@
-"""Unit tests for LocaleConfig and locale constants (T006b, T015)."""
+"""Unit tests for LocaleConfig and locale constants (T006b, T015, T036)."""
 
 import datetime
 import decimal
@@ -125,6 +125,24 @@ class TestLocalePtBr:
 # ---------------------------------------------------------------------------
 # Helper — mirrors what Formatter.render() will do (tested more thoroughly
 # in test_formatter.py; here we just verify locale config values drive output)
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# T036: col_beneficiary field tests
+# ---------------------------------------------------------------------------
+
+
+class TestLocaleBeneficiaryLabel:
+    def test_locale_en_col_beneficiary(self) -> None:
+        assert LOCALE_EN.col_beneficiary == "Beneficiary"
+
+    def test_locale_ptbr_col_beneficiary(self) -> None:
+        assert LOCALE_PT_BR.col_beneficiary == "Beneficiário"
+
+
+# ---------------------------------------------------------------------------
+# Helper — mirrors what Formatter.render() will do
 # ---------------------------------------------------------------------------
 
 

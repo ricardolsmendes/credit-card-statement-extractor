@@ -8,6 +8,7 @@ from credit_card_statement_extractor.transaction_extractor._models import Transa
 _MIN_DATE_WIDTH = 10
 _MIN_DESC_WIDTH = 20
 _MIN_AMOUNT_WIDTH = 12
+_MIN_BENEFICIARY_WIDTH = 12
 _COL_SEP = "  "
 
 
@@ -42,19 +43,26 @@ class Formatter:
         print(table)
     """
 
-    def render(self, transactions: list[Transaction], locale: LocaleConfig) -> str:
+    def render(
+        self,
+        transactions: list[Transaction],
+        locale: LocaleConfig,
+        has_beneficiary: bool = False,
+    ) -> str:
         """Produce a fixed-width table string.
 
         Column layout:
-        - Date:        left-aligned, min width 10
-        - Description: left-aligned, min width 20
-        - Amount:      right-aligned, min width 12
+        - Date:         left-aligned, min width 10
+        - Beneficiary:  left-aligned, min width 12 (only when has_beneficiary=True)
+        - Description:  left-aligned, min width 20
+        - Amount:       right-aligned, min width 12
 
         Columns separated by two spaces.  Header row, separator line, then
         one row per transaction.
         """
         # Pre-format values so we can compute column widths
         formatted_dates = [t.date.strftime(locale.date_format) for t in transactions]
+        formatted_beneficiaries = [t.beneficiary or "" for t in transactions]
         formatted_descs = [t.description for t in transactions]
         formatted_amounts = [_format_amount(t.amount, locale) for t in transactions]
 
@@ -63,6 +71,11 @@ class Formatter:
             _MIN_DATE_WIDTH,
             len(locale.col_date),
             *(len(d) for d in formatted_dates) if formatted_dates else [0],
+        )
+        beneficiary_w = max(
+            _MIN_BENEFICIARY_WIDTH,
+            len(locale.col_beneficiary),
+            *(len(b) for b in formatted_beneficiaries) if formatted_beneficiaries else [0],
         )
         desc_w = max(
             _MIN_DESC_WIDTH,
@@ -75,28 +88,50 @@ class Formatter:
             *(len(a) for a in formatted_amounts) if formatted_amounts else [0],
         )
 
-        # Build header and separator
-        header = (
-            locale.col_date.ljust(date_w)
-            + _COL_SEP
-            + locale.col_description.ljust(desc_w)
-            + _COL_SEP
-            + locale.col_amount.rjust(amount_w)
-        )
+        # Build header
+        if has_beneficiary:
+            header = (
+                locale.col_date.ljust(date_w)
+                + _COL_SEP
+                + locale.col_beneficiary.ljust(beneficiary_w)
+                + _COL_SEP
+                + locale.col_description.ljust(desc_w)
+                + _COL_SEP
+                + locale.col_amount.rjust(amount_w)
+            )
+        else:
+            header = (
+                locale.col_date.ljust(date_w)
+                + _COL_SEP
+                + locale.col_description.ljust(desc_w)
+                + _COL_SEP
+                + locale.col_amount.rjust(amount_w)
+            )
         separator = "-" * len(header)
 
         # Build data rows
         rows: list[str] = [header, separator]
-        for date_str, desc_str, amount_str in zip(
-            formatted_dates, formatted_descs, formatted_amounts
+        for date_str, ben_str, desc_str, amount_str in zip(
+            formatted_dates, formatted_beneficiaries, formatted_descs, formatted_amounts
         ):
-            row = (
-                date_str.ljust(date_w)
-                + _COL_SEP
-                + desc_str.ljust(desc_w)
-                + _COL_SEP
-                + amount_str.rjust(amount_w)
-            )
+            if has_beneficiary:
+                row = (
+                    date_str.ljust(date_w)
+                    + _COL_SEP
+                    + ben_str.ljust(beneficiary_w)
+                    + _COL_SEP
+                    + desc_str.ljust(desc_w)
+                    + _COL_SEP
+                    + amount_str.rjust(amount_w)
+                )
+            else:
+                row = (
+                    date_str.ljust(date_w)
+                    + _COL_SEP
+                    + desc_str.ljust(desc_w)
+                    + _COL_SEP
+                    + amount_str.rjust(amount_w)
+                )
             rows.append(row)
 
         return "\n".join(rows)

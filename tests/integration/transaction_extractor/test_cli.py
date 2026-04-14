@@ -14,6 +14,8 @@ EN_PDF = FIXTURES / "en_statement.pdf"
 PTBR_PDF = FIXTURES / "ptbr_statement.pdf"
 NO_TXN_PDF = FIXTURES / "no_transactions_statement.pdf"
 PARTIAL_PDF = FIXTURES / "partial_statement.pdf"
+PTBR_LONG_DATE_PDF = FIXTURES / "ptbr_long_date_statement.pdf"
+PTBR_BENEFICIARY_PDF = FIXTURES / "ptbr_long_date_beneficiary_statement.pdf"
 NOT_PDF = Path(__file__).parent.parent.parent / "fixtures" / "pdfs" / "not_a_pdf.txt"
 
 
@@ -192,3 +194,55 @@ class TestCLITiming:
         elapsed = time.monotonic() - start
         assert result.returncode == 0
         assert elapsed < 2.0, f"CLI took {elapsed:.2f}s (limit: 2s)"
+
+
+# ---------------------------------------------------------------------------
+# T033: FR-013 integration — long pt-BR date fixture (no Beneficiário column)
+# ---------------------------------------------------------------------------
+
+
+class TestFR013LongDateIntegration:
+    def test_exit_0_on_ptbr_long_date_pdf(self) -> None:
+        result = _run(str(PTBR_LONG_DATE_PDF), "--lang", "pt-BR")
+        assert result.returncode == 0, f"stderr: {result.stderr}"
+
+    def test_dates_appear_as_dd_mm_yyyy(self) -> None:
+        result = _run(str(PTBR_LONG_DATE_PDF), "--lang", "pt-BR")
+        assert "14/03/2026" in result.stdout
+
+    def test_transaction_count_matches_fixture(self) -> None:
+        result = _run(str(PTBR_LONG_DATE_PDF), "--lang", "pt-BR")
+        lines = [ln for ln in result.stdout.strip().split("\n") if ln.strip()]
+        # header + separator + 2 transactions = 4 lines
+        assert len(lines) == 4
+
+
+# ---------------------------------------------------------------------------
+# T044: FR-014 integration — Beneficiário column present/absent
+# ---------------------------------------------------------------------------
+
+
+class TestFR014BeneficiaryColumnIntegration:
+    def test_beneficiary_column_present_in_output(self) -> None:
+        result = _run(str(PTBR_BENEFICIARY_PDF), "--lang", "pt-BR")
+        assert result.returncode == 0, f"stderr: {result.stderr}"
+        assert "Benefici" in result.stdout  # matches "Beneficiário"
+
+    def test_beneficiary_values_appear_in_output(self) -> None:
+        result = _run(str(PTBR_BENEFICIARY_PDF), "--lang", "pt-BR")
+        assert "DrinksEBar" in result.stdout
+        assert "PostoDeGasolina" in result.stdout
+
+    def test_dates_appear_as_dd_mm_yyyy_with_beneficiary(self) -> None:
+        result = _run(str(PTBR_BENEFICIARY_PDF), "--lang", "pt-BR")
+        assert "14/03/2026" in result.stdout
+
+    def test_no_beneficiary_column_on_ptbr_statement(self) -> None:
+        result = _run(str(PTBR_PDF), "--lang", "pt-BR")
+        assert result.returncode == 0
+        assert "Benefici" not in result.stdout
+
+    def test_no_beneficiary_column_on_en_statement(self) -> None:
+        result = _run(str(EN_PDF))
+        assert result.returncode == 0
+        assert "Benefici" not in result.stdout

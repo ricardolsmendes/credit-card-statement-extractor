@@ -1,4 +1,4 @@
-"""Unit tests for Transaction frozen dataclass (T005)."""
+"""Unit tests for Transaction frozen dataclass (T005, T035)."""
 
 import dataclasses
 import datetime
@@ -67,3 +67,46 @@ class TestTransactionConstruction:
         assert any(f.name == "date" for f in fields)
         assert any(f.name == "description" for f in fields)
         assert any(f.name == "amount" for f in fields)
+
+
+# ---------------------------------------------------------------------------
+# T035: beneficiary field tests
+# ---------------------------------------------------------------------------
+
+
+class TestTransactionBeneficiary:
+    def test_beneficiary_stored_correctly(self) -> None:
+        txn = Transaction(
+            date=datetime.date(2026, 3, 14),
+            description="DrinksEBar",
+            amount=decimal.Decimal("-85.91"),
+            beneficiary="DrinksEBar",
+        )
+        assert txn.beneficiary == "DrinksEBar"
+
+    def test_beneficiary_default_is_none(self) -> None:
+        txn = Transaction(
+            date=datetime.date(2026, 3, 14),
+            description="Coffee Shop",
+            amount=decimal.Decimal("-4.50"),
+        )
+        assert txn.beneficiary is None
+
+    def test_frozen_dataclass_still_raises_on_mutation(self) -> None:
+        txn = Transaction(
+            date=datetime.date(2026, 3, 14),
+            description="DrinksEBar",
+            amount=decimal.Decimal("-85.91"),
+            beneficiary="DrinksEBar",
+        )
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            txn.beneficiary = "Other"  # type: ignore[misc]
+
+    def test_none_beneficiary_not_rejected(self) -> None:
+        txn = Transaction(
+            date=datetime.date(2026, 3, 14),
+            description="Coffee Shop",
+            amount=decimal.Decimal("-4.50"),
+            beneficiary=None,
+        )
+        assert txn.beneficiary is None

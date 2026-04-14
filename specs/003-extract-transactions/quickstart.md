@@ -23,12 +23,12 @@ python -m credit_card_statement_extractor.transaction_extractor statement.pdf
 Expected output:
 
 ```
-Date        Description                    Amount
-----------  -----------------------------  -----------
-2026-03-01  Coffee Shop                         -4.50
-2026-03-02  Grocery Store                      -82.10
-2026-03-10  Payment received                  +500.00
-2026-03-15  Gas Station                        -89.50
+Date        Description                 Amount
+----------------------------------------------
+2026-03-01  Coffee Shop                  -4.50
+2026-03-02  Grocery Store               -82.10
+2026-03-10  Payment received           +500.00
+2026-03-15  Gas Station                 -89.50
 ```
 
 ---
@@ -45,21 +45,21 @@ python -m credit_card_statement_extractor.transaction_extractor statement.pdf --
 Expected output (statement with Beneficiário column and long dates):
 
 ```
-Data        Beneficiário              Descrição  Valor
-----------  ------------------------  ---------  -----------
-14/03/2026  DrinksEBar                            -R$ 85,91
-14/03/2026  Posto de Gasolina                    -R$ 169,66
+Data        Beneficiário     Descrição                    Valor
+---------------------------------------------------------------
+14/03/2026  DrinksEBar       DrinksEBar               -R$ 85,91
+14/03/2026  PostoDeGasolina  ABASTEC*Posto           -R$ 169,66
 ```
 
 Expected output (statement without Beneficiário column):
 
 ```
-Data        Descrição                      Valor
-----------  -----------------------------  -----------
-01/03/2026  Coffee Shop                     -R$ 4,50
-02/03/2026  Supermercado ABC               -R$ 82,10
-10/03/2026  Pagamento recebido            +R$ 500,00
-15/03/2026  Posto de Gasolina              -R$ 89,50
+Data        Descrição                    Valor
+----------------------------------------------
+01/03/2026  Coffee Shop               -R$ 4,50
+02/03/2026  Supermercado ABC         -R$ 82,10
+10/03/2026  Pagamento recebido      +R$ 500,00
+15/03/2026  Posto de Gasolina        -R$ 89,50
 ```
 
 ---

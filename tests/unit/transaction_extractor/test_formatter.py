@@ -1,4 +1,4 @@
-"""Unit tests for Formatter (T007, T016)."""
+"""Unit tests for Formatter (T007, T016, T037)."""
 
 import datetime
 import decimal
@@ -135,3 +135,77 @@ class TestFormatterPtBr:
         result = Formatter().render(en_transactions, LOCALE_PT_BR)
         # Positive amounts: +R$ 500,00
         assert "+R$" in result
+
+
+# ---------------------------------------------------------------------------
+# T037: has_beneficiary parameter tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def beneficiary_transactions() -> list[Transaction]:
+    return [
+        Transaction(
+            date=datetime.date(2026, 3, 14),
+            description="DrinksEBar",
+            amount=decimal.Decimal("-85.91"),
+            beneficiary="DrinksEBar",
+        ),
+        Transaction(
+            date=datetime.date(2026, 3, 14),
+            description="ABASTEC*Posto",
+            amount=decimal.Decimal("-169.66"),
+            beneficiary="PostoDeGasolina",
+        ),
+    ]
+
+
+class TestFormatterBeneficiaryColumn:
+    def test_beneficiary_header_in_ptbr_output(
+        self, beneficiary_transactions: list[Transaction]
+    ) -> None:
+        result = Formatter().render(beneficiary_transactions, LOCALE_PT_BR, has_beneficiary=True)
+        assert "Benefici" in result.split("\n")[0]  # matches "Beneficiário"
+
+    def test_beneficiary_header_in_en_output(
+        self, beneficiary_transactions: list[Transaction]
+    ) -> None:
+        result = Formatter().render(beneficiary_transactions, LOCALE_EN, has_beneficiary=True)
+        assert "Beneficiary" in result.split("\n")[0]
+
+    def test_beneficiary_column_between_date_and_description(
+        self, beneficiary_transactions: list[Transaction]
+    ) -> None:
+        result = Formatter().render(beneficiary_transactions, LOCALE_PT_BR, has_beneficiary=True)
+        header = result.split("\n")[0]
+        date_pos = header.index("Data")
+        beneficiary_pos = header.index("Benefici")
+        desc_pos = header.index("Descri")
+        assert date_pos < beneficiary_pos < desc_pos
+
+    def test_beneficiary_column_absent_when_false(self, en_transactions: list[Transaction]) -> None:
+        result = Formatter().render(en_transactions, LOCALE_EN, has_beneficiary=False)
+        assert "Beneficiary" not in result
+        assert "Benefici" not in result
+
+    def test_beneficiary_column_absent_by_default(self, en_transactions: list[Transaction]) -> None:
+        result = Formatter().render(en_transactions, LOCALE_EN)
+        assert "Beneficiary" not in result
+
+    def test_beneficiary_values_appear_in_rows(
+        self, beneficiary_transactions: list[Transaction]
+    ) -> None:
+        result = Formatter().render(beneficiary_transactions, LOCALE_PT_BR, has_beneficiary=True)
+        assert "DrinksEBar" in result
+        assert "PostoDeGasolina" in result
+
+    def test_beneficiary_column_left_aligned(
+        self, beneficiary_transactions: list[Transaction]
+    ) -> None:
+        result = Formatter().render(beneficiary_transactions, LOCALE_EN, has_beneficiary=True)
+        lines = result.split("\n")
+        # All non-empty rows should have the same length as header (fixed-width)
+        header_len = len(lines[0])
+        for line in lines[2:]:
+            if line.strip():
+                assert len(line) == header_len

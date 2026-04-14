@@ -1,4 +1,4 @@
-"""Unit tests for DefaultParser (T006, T011, T023)."""
+"""Unit tests for DefaultParser (T006, T011, T023, T032, T038)."""
 
 import datetime
 import decimal
@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 
 from credit_card_statement_extractor.pdf_reader._protocol import PageResult
-from credit_card_statement_extractor.transaction_extractor._parser import DefaultParser
+from credit_card_statement_extractor.transaction_extractor._parser import (
+    DefaultParser,
+    _normalise_amount,
+    _parse_date,
+)
 from credit_card_statement_extractor.transaction_extractor._protocol import (
     TransactionParser,
 )
@@ -214,3 +218,125 @@ class TestParserTiming:
 
         assert elapsed < 2.0, f"Parsing took {elapsed:.2f}s (limit: 2s)"
         assert len(txns) == 4
+
+
+# ---------------------------------------------------------------------------
+# T032: FR-013 unit tests — long pt-BR date format and currency-prefix amounts
+# ---------------------------------------------------------------------------
+
+
+class TestParseDateLongFormat:
+    def test_long_date_with_period(self) -> None:
+        assert _parse_date("14 de mar. 2026") == datetime.date(2026, 3, 14)
+
+    def test_long_date_without_period(self) -> None:
+        assert _parse_date("14 de mar 2026") == datetime.date(2026, 3, 14)
+
+    def test_all_12_month_abbreviations(self) -> None:
+        months = [
+            ("jan", 1),
+            ("fev", 2),
+            ("mar", 3),
+            ("abr", 4),
+            ("mai", 5),
+            ("jun", 6),
+            ("jul", 7),
+            ("ago", 8),
+            ("set", 9),
+            ("out", 10),
+            ("nov", 11),
+            ("dez", 12),
+        ]
+        for abbr, expected_month in months:
+            result = _parse_date(f"1 de {abbr}. 2026")
+            assert result.month == expected_month, (
+                f"Month {abbr!r} → expected {expected_month}, got {result.month}"
+            )
+
+    def test_unknown_month_abbreviation_raises(self) -> None:
+        with pytest.raises(ValueError):
+            _parse_date("14 de xyz. 2026")
+
+    def test_numeric_date_still_works(self) -> None:
+        """Ensure existing numeric format paths are unaffected."""
+        assert _parse_date("01/03/2026") == datetime.date(2026, 3, 1)
+        assert _parse_date("2026-03-01") == datetime.date(2026, 3, 1)
+
+
+class TestNormaliseAmountCurrencyPrefix:
+    def test_r_dollar_prefix_negative(self) -> None:
+        assert _normalise_amount("- R$ 85,91") == decimal.Decimal("-85.91")
+
+    def test_r_dollar_prefix_large_amount(self) -> None:
+        assert _normalise_amount("- R$ 1.234,56") == decimal.Decimal("-1234.56")
+
+    def test_plain_amount_without_prefix_unchanged(self) -> None:
+        """Existing path: no prefix — must still work."""
+        assert _normalise_amount("85,91") == decimal.Decimal("85.91")
+
+    def test_plain_negative_without_prefix(self) -> None:
+        assert _normalise_amount("-85,91") == decimal.Decimal("-85.91")
+
+    def test_r_dollar_prefix_positive(self) -> None:
+        assert _normalise_amount("R$ 85,91") == decimal.Decimal("85.91")
+
+
+class TestDefaultParserLongDateEndToEnd:
+    def test_long_date_parses_correctly(self) -> None:
+        text = "Data  Movimentacao  Valor\n14 de mar. 2026  DrinksEBar  -85,91\n"
+        parser = DefaultParser()
+        txns, skipped = parser.parse(_pages(text))
+        assert len(txns) == 1
+        assert txns[0].date == datetime.date(2026, 3, 14)
+        assert skipped == 0
+
+    def test_mixed_numeric_and_long_dates(self) -> None:
+        """Both long-format and numeric dates on the same page parse correctly."""
+        text = (
+            "Data  Movimentacao  Valor\n"
+            "14 de mar. 2026  DrinksEBar  -85,91\n"
+            "15/03/2026  Grocery Store  -42,00\n"
+        )
+        parser = DefaultParser()
+        txns, skipped = parser.parse(_pages(text))
+        assert len(txns) == 2
+        assert txns[0].date == datetime.date(2026, 3, 14)
+        assert txns[1].date == datetime.date(2026, 3, 15)
+        assert skipped == 0
+
+
+# ---------------------------------------------------------------------------
+# T038: FR-014 unit tests — Beneficiário column detection
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultParserBeneficiaryColumn:
+    def test_beneficiary_column_detected_and_captured(self) -> None:
+        text = (
+            "Data              Movimentacao    Beneficiario             Valor\n"
+            "14 de mar. 2026  DrinksEBar      DrinksEBar               -85,91\n"
+            "14 de mar. 2026  ABASTEC*Posto   PostoDeGasolina           -169,66\n"
+        )
+        parser = DefaultParser()
+        txns, skipped = parser.parse(_pages(text))
+        assert len(txns) == 2
+        assert txns[0].beneficiary == "DrinksEBar"
+        assert txns[1].beneficiary == "PostoDeGasolina"
+
+    def test_no_beneficiary_column_gives_none(self) -> None:
+        text = "Data  Movimentacao  Valor\n14 de mar. 2026  DrinksEBar  -85,91\n"
+        parser = DefaultParser()
+        txns, skipped = parser.parse(_pages(text))
+        assert len(txns) == 1
+        assert txns[0].beneficiary is None
+
+    def test_beneficiary_header_not_confused_with_description(self) -> None:
+        """_is_header_line must still return True for a header with Beneficiario."""
+        text = (
+            "Data              Movimentacao    Beneficiario             Valor\n"
+            "14 de mar. 2026  DrinksEBar      DrinksEBar               -85,91\n"
+        )
+        parser = DefaultParser()
+        txns, _ = parser.parse(_pages(text))
+        # If header detection failed, parse would raise ValueError
+        assert len(txns) == 1

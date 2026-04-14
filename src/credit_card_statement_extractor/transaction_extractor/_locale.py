@@ -26,6 +26,7 @@ class LocaleConfig:
     col_date: str
     col_description: str
     col_amount: str
+    col_beneficiary: str
 
 
 #: English locale — ISO 8601 dates, period decimal, no currency prefix.
@@ -38,6 +39,7 @@ LOCALE_EN = LocaleConfig(
     col_date="Date",
     col_description="Description",
     col_amount="Amount",
+    col_beneficiary="Beneficiary",
 )
 
 #: Brazilian Portuguese locale — added in T017 (US2).
@@ -52,4 +54,5 @@ LOCALE_PT_BR = LocaleConfig(
     col_date="Data",
     col_description="Descrição",
     col_amount="Valor",
+    col_beneficiary="Beneficiário",
 )

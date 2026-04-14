@@ -8,6 +8,8 @@ Fixtures generated:
     ptbr_statement.pdf     — pt-BR headers, same 4 transactions
     no_transactions_statement.pdf — valid PDF, no transaction header row
     partial_statement.pdf  — 2 parseable lines + 2 malformed lines
+    ptbr_long_date_statement.pdf           — pt-BR long dates, no Beneficiário column
+    ptbr_long_date_beneficiary_statement.pdf — pt-BR long dates, with Beneficiário column
 
 Layout strategy
 ---------------
@@ -127,6 +129,26 @@ PTBR_TXNS = [
     "15/03/2026  Posto de Gasolina                     -89,50",
 ]
 
+# Phase 7 fixture: long pt-BR dates, no Beneficiário column
+# Header uses "Movimentacao" (ASCII alias for "Movimentação", a recognised description variant)
+# Amounts use plain pt-BR numeric format (no currency prefix) so _TXN_RE can capture them.
+PTBR_LONG_DATE_HEADER = "Data        Movimentacao                   Valor"
+PTBR_LONG_DATE_TXNS = [
+    "14 de mar. 2026  DrinksEBar                        -85,91",
+    "14 de mar. 2026  Posto de Gasolina                 -169,66",
+]
+
+# Phase 8 fixture: long pt-BR dates, WITH Beneficiario column
+# Four-column layout: Data / Movimentacao / Beneficiario / Valor
+# "Beneficiario" is the ASCII alias for "Beneficiário" recognised by the parser.
+# Beneficiary values are single tokens (no spaces) to survive pdfplumber's
+# whitespace collapsing during text extraction.
+PTBR_BENEFICIARY_HEADER = "Data              Movimentacao    Beneficiario             Valor"
+PTBR_BENEFICIARY_TXNS = [
+    "14 de mar. 2026  DrinksEBar      DrinksEBar               -85,91",
+    "14 de mar. 2026  ABASTEC*Posto   PostoDeGasolina           -169,66",
+]
+
 
 def main() -> None:
     out = Path(__file__).parent
@@ -203,6 +225,38 @@ def main() -> None:
         )
     )
     print("Created partial_statement.pdf")
+
+    # ptbr_long_date_statement.pdf — Phase 7: long pt-BR dates, no Beneficiário column
+    (out / "ptbr_long_date_statement.pdf").write_bytes(
+        _build_pdf(
+            [
+                [
+                    "RESUMO DA CONTA",
+                    "Conta: XXXX-2026",
+                    "",
+                    PTBR_LONG_DATE_HEADER,
+                    *PTBR_LONG_DATE_TXNS,
+                ]
+            ]
+        )
+    )
+    print("Created ptbr_long_date_statement.pdf")
+
+    # ptbr_long_date_beneficiary_statement.pdf — Phase 8: long dates + Beneficiário column
+    (out / "ptbr_long_date_beneficiary_statement.pdf").write_bytes(
+        _build_pdf(
+            [
+                [
+                    "RESUMO DA CONTA",
+                    "Conta: XXXX-2026",
+                    "",
+                    PTBR_BENEFICIARY_HEADER,
+                    *PTBR_BENEFICIARY_TXNS,
+                ]
+            ]
+        )
+    )
+    print("Created ptbr_long_date_beneficiary_statement.pdf")
 
 
 if __name__ == "__main__":

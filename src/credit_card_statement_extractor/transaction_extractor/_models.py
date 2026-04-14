@@ -12,12 +12,15 @@ class Transaction:
     Attributes:
         date: Transaction date.
         description: Merchant name or transaction narrative (non-empty).
+        beneficiary: Beneficiary name when the source statement has a
+            "Beneficiário" column; ``None`` when the column is absent.
         amount: Positive for purchases/charges; negative for payments/credits.
     """
 
     date: datetime.date
     description: str
     amount: decimal.Decimal
+    beneficiary: str | None = None
 
     def __post_init__(self) -> None:
         if not self.description.strip():
