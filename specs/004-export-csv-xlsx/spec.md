@@ -51,7 +51,7 @@ A user wants to export extracted transactions to an Excel-compatible XLSX file, 
 
 ### Edge Cases
 
-- How does the export handle transactions with special characters (accents, asterisks, slashes) in descriptions?
+- Special characters (accents, asterisks, slashes) in descriptions are written as-is; UTF-8 with BOM encoding ensures correct display in all target spreadsheet tools.
 - What happens when the amount is a very large number that could cause precision loss in a spreadsheet?
 - What if the PDF yields zero transactions? No export file is created; the existing "No transactions found" error path fires.
 - What if the user does not have write permission to the directory containing the input PDF? An error is printed to stderr and the process exits with a non-zero code.
@@ -68,7 +68,7 @@ A user wants to export extracted transactions to an Excel-compatible XLSX file, 
 - **FR-005**: CSV and XLSX column labels MUST use the locale specified by `--lang` (default: English).
 - **FR-006**: Date values in CSV MUST be formatted as text using the locale's date format string (e.g., `2026-03-01` for English, `01/03/2026` for pt-BR).
 - **FR-007**: Date values in XLSX MUST be stored as native date types.
-- **FR-008**: Amount values in CSV MUST be written as plain numeric strings without currency symbols or thousands separators (e.g., `-4.50`, `500.00`), to ensure interoperability with spreadsheet import.
+- **FR-008**: Amount values in CSV MUST be written as plain numeric strings without currency symbols or thousands separators (e.g., `-4.50`, `500.00`), to ensure interoperability with spreadsheet import. Positive amounts MUST NOT carry a leading `+` sign.
 - **FR-009**: Amount values in XLSX MUST be stored as native numeric types.
 - **FR-010**: If the output file cannot be written (permission error, non-writable directory, etc.), the system MUST print an error message to stderr and exit with code 1.
 - **FR-011**: If `--output-format` is omitted, behaviour MUST remain unchanged — the system prints the formatted table to stdout as before.
