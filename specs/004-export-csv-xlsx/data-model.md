@@ -40,13 +40,17 @@ A lightweight value object capturing the parameters for a single export operatio
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `path` | `pathlib.Path` | Absolute or relative output path |
-| `format` | `Literal["csv", "xlsx"]` | Derived from `path.suffix.lower()` |
+| `path` | `pathlib.Path` | Derived as `<input_pdf_parent>/<input_pdf_stem>-transactions.<ext>` |
+| `format` | `Literal["csv", "xlsx"]` | From `--output-format` CLI argument |
 | `has_beneficiary` | `bool` | True if any transaction has non-None beneficiary |
 
+**Path derivation rule**:
+- Given input PDF at `/some/dir/statement.pdf` and `--output-format csv`
+- Output path = `/some/dir/statement-transactions.csv`
+
 **Validation rules**:
-- `path.suffix.lower()` must be `".csv"` or `".xlsx"` — else raise `ValueError`
-- `path.parent` must exist as a directory — else raise `FileNotFoundError`
+- `format` must be `"csv"` or `"xlsx"` — enforced by argparse `choices`
+- `path.parent` must exist as a writable directory — else raise `PermissionError` / `FileNotFoundError`
 
 ---
 

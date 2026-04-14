@@ -24,15 +24,17 @@ uv sync --extra xlsx
 ## Export to CSV (English)
 
 ```bash
-python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output transactions.csv
+python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output-format csv
 ```
+
+Output file created: `statement-transactions.csv` (same directory as the input PDF)
 
 Expected stdout:
 ```
-Exported 4 transactions to transactions.csv
+Exported 4 transactions to statement-transactions.csv
 ```
 
-Generated `transactions.csv`:
+Generated `statement-transactions.csv`:
 ```
 Date,Description,Amount
 2026-03-01,Coffee Shop,-4.50
@@ -46,15 +48,17 @@ Date,Description,Amount
 ## Export to CSV (Brazilian Portuguese)
 
 ```bash
-python -m credit_card_statement_extractor.transaction_extractor statement.pdf --lang pt-BR --output faturas.csv
+python -m credit_card_statement_extractor.transaction_extractor faturas.pdf --lang pt-BR --output-format csv
 ```
+
+Output file created: `faturas-transactions.csv`
 
 Expected stdout:
 ```
-Exported 4 transactions to faturas.csv
+Exported 4 transactions to faturas-transactions.csv
 ```
 
-Generated `faturas.csv`:
+Generated `faturas-transactions.csv`:
 ```
 Data,Descrição,Valor
 01/03/2026,Coffee Shop,-4.50
@@ -68,12 +72,14 @@ Data,Descrição,Valor
 ## Export to XLSX
 
 ```bash
-python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output transactions.xlsx
+python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output-format xlsx
 ```
+
+Output file created: `statement-transactions.xlsx`
 
 Expected stdout:
 ```
-Exported 4 transactions to transactions.xlsx
+Exported 4 transactions to statement-transactions.xlsx
 ```
 
 The XLSX file contains:
@@ -88,10 +94,11 @@ The XLSX file contains:
 ## Export with Beneficiário column (pt-BR)
 
 ```bash
-python -m credit_card_statement_extractor.transaction_extractor statement_with_beneficiary.pdf --lang pt-BR --output transactions.csv
+python -m credit_card_statement_extractor.transaction_extractor statement_with_beneficiary.pdf --lang pt-BR --output-format csv
 ```
 
-Generated `transactions.csv`:
+Output file: `statement_with_beneficiary-transactions.csv`
+
 ```
 Data,Beneficiário,Descrição,Valor
 14/03/2026,DrinksEBar,DrinksEBar,-85.91
@@ -102,7 +109,7 @@ Data,Beneficiário,Descrição,Valor
 
 ## Default table output (unchanged)
 
-Omitting `--output` still prints the table to stdout:
+Omitting `--output-format` still prints the table to stdout:
 
 ```bash
 python -m credit_card_statement_extractor.transaction_extractor statement.pdf
@@ -119,24 +126,17 @@ Date        Description                 Amount
 
 ## Error scenarios
 
-**Unsupported extension**:
-```bash
-python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output report.txt
-# stderr: Error: Unsupported output format ".txt". Use .csv or .xlsx.
-# exit:   1
-```
-
-**Output directory does not exist**:
-```bash
-python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output /missing/dir/out.csv
-# stderr: Error: Output directory does not exist: /missing/dir
-# exit:   1
-```
-
 **xlsxwriter not installed**:
 ```bash
-python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output out.xlsx
+python -m credit_card_statement_extractor.transaction_extractor statement.pdf --output-format xlsx
 # stderr: Error: XLSX export requires xlsxwriter. Install it with: pip install xlsxwriter
+# exit:   1
+```
+
+**Write permission denied**:
+```bash
+python -m credit_card_statement_extractor.transaction_extractor /read-only/statement.pdf --output-format csv
+# stderr: Error: Cannot write to output file: /read-only/statement-transactions.csv
 # exit:   1
 ```
 

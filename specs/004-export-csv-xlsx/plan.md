@@ -7,7 +7,7 @@
 
 ## Summary
 
-Add `--output <path>` to the existing transaction extractor CLI. When the flag is given, extracted transactions are written to a CSV or XLSX file (format determined by file extension) instead of printing the table to stdout. CSV uses stdlib only; XLSX uses `xlsxwriter` (optional extra). Both formats use locale-appropriate column headers and date strings; amounts are always written as plain dot-decimal numerics for spreadsheet interoperability.
+Add `--output-format {csv,xlsx}` to the existing transaction extractor CLI. When the flag is given, extracted transactions are written to a file named `<input_stem>-transactions.<ext>` in the same directory as the input PDF, instead of printing the table to stdout. CSV uses stdlib only; XLSX uses `xlsxwriter` (optional extra). Both formats use locale-appropriate column headers and date strings; amounts are always written as plain dot-decimal numerics for spreadsheet interoperability.
 
 ---
 
@@ -93,7 +93,7 @@ tests/
 See [research.md](research.md) — all decisions resolved:
 - XLSX library: `xlsxwriter` (zero deps, write-only, pure Python)
 - CSV: stdlib `csv`, `utf-8-sig`, comma delimiter, dot-decimal amounts
-- Architecture: new `_exporter.py` module, `--output` flag in `__main__.py`
+- Architecture: new `_exporter.py` module, `--output-format` flag in `__main__.py`; output path derived from input PDF stem
 - Dependency: optional `xlsx` extra in `pyproject.toml`
 
 ---
@@ -118,13 +118,15 @@ class Exporter:
         transactions: list[Transaction],
         locale: LocaleConfig,
         path: Path,
+        format: Literal["csv", "xlsx"],
         has_beneficiary: bool = False,
     ) -> None:
-        """Write transactions to CSV or XLSX based on path suffix."""
+        """Write transactions to CSV or XLSX. format must be 'csv' or 'xlsx'."""
 ```
 
-- Dispatches on `path.suffix.lower()`: `".csv"` → `_write_csv()`, `".xlsx"` → `_write_xlsx()`
-- Validates extension and parent directory before writing
+- Dispatches on `format`: `"csv"` → `_write_csv()`, `"xlsx"` → `_write_xlsx()`
+- `path` is the fully-derived output path (computed in `__main__.py` from the input PDF stem)
+- Validates parent directory is writable before writing
 - For XLSX: imports `xlsxwriter` inside the method — catches `ImportError`, raises with install hint
 
 ### Amount formatting
@@ -138,10 +140,10 @@ class Exporter:
 
 ### `__main__.py` changes
 
-1. Add `--output` argument to `_build_arg_parser()`
+1. Add `--output-format` argument (`choices=["csv", "xlsx"]`) to `_build_arg_parser()`
 2. After parsing transactions (existing flow), branch:
-   - `args.output` is None → existing `Formatter.render()` path (unchanged)
-   - `args.output` is set → `Exporter().export(...)` → print confirmation to stdout
+   - `args.output_format` is None → existing `Formatter.render()` path (unchanged)
+   - `args.output_format` is set → derive output path as `<pdf_parent>/<pdf_stem>-transactions.<ext>` → `Exporter().export(...)` → print confirmation to stdout
 3. All existing error paths (exit 1/2/3) remain untouched
 
 ### `pyproject.toml` change

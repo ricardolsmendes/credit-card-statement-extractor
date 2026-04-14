@@ -48,12 +48,13 @@
 - Single Responsibility: keeps export logic separate from display formatting
 - The exporter operates on the same `list[Transaction]` + `LocaleConfig` inputs as `Formatter.render()`
 - Public interface: `Exporter.export(transactions, locale, path, has_beneficiary)` — returns nothing, writes the file
-- Format dispatching is by file extension (`.csv` → CSV writer, `.xlsx` → XLSX writer)
+- Format dispatching is by `format` enum/string (`csv` → CSV writer, `xlsx` → XLSX writer)
 - Both writers share a column-header and row-data builder so column order is consistent
 
-**`__main__.py` change**: Add `--output <path>` argument. When present:
+**`__main__.py` change**: Add `--output-format {csv,xlsx}` argument. When present:
+- Derive output path: `<input_pdf_parent>/<input_pdf_stem>-transactions.<ext>`
 - Call `Exporter.export(...)` instead of `Formatter.render()`
-- Print confirmation to stdout (`Exported N transactions to <path>`)
+- Print confirmation to stdout (e.g., `Exported N transactions to statement-transactions.csv`)
 - Suppress the table output
 
 **No new subpackage**: The exporter lives at the same level as `_formatter.py`. A dedicated `exporters/` subpackage would be premature abstraction (Constitution §VI).
