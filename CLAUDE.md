@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-14
 - Python 3.11+ + `pdfplumber ≥ 0.11` (existing); `xlsxwriter ≥ 3.0` (new, optional `xlsx` extra); stdlib `csv`, `pathlib`, `datetime`, `decimal` (no new mandatory deps) (004-export-csv-xlsx)
 - File system write — single output file per invocation (004-export-csv-xlsx)
 - File system write — single output file per invocation, in same directory as input PDF (004-export-csv-xlsx)
+- Markdown (CommonMark / GitHub Flavored Markdown) + None — pure documentation edi (005-update-readme-capabilities)
+- Single file: `README.md` at repository roo (005-update-readme-capabilities)
 
 - Python 3.11+ + `hatchling` (build), `uv` (dependency manager + venv), `pytest` (test), `ruff` (lint/format) (main)
 
@@ -33,9 +35,9 @@ uv run ruff format .   # format
 Python 3.11+: Follow standard conventions
 
 ## Recent Changes
+- 005-update-readme-capabilities: Added Markdown (CommonMark / GitHub Flavored Markdown) + None — pure documentation edi
 - 004-export-csv-xlsx: Added Python 3.11+ + `pdfplumber ≥ 0.11` (existing); `xlsxwriter ≥ 3.0` (new, optional `xlsx` extra); stdlib `csv`, `pathlib`, `datetime`, `decimal` (no new mandatory deps)
 - 004-export-csv-xlsx: Added Python 3.11+ + `pdfplumber ≥ 0.11` (existing); `xlsxwriter ≥ 3.0` (new, optional `xlsx` extra); stdlib `csv`, `pathlib`, `datetime`, `decimal` (no new mandatory deps)
-- 003-extract-transactions: Added Python 3.11+ + `pdfplumber ≥ 0.11` (via `pdf_reader`); stdlib only for new code (`re`, `datetime`, `decimal`)
 
 
 <!-- MANUAL ADDITIONS START -->
