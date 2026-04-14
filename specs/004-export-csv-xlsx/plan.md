@@ -145,7 +145,7 @@ class Exporter:
 
 ### Amount representation
 
-- **CSV**: `f"{'+' if amount > 0 else ''}{amount}"` — always dot-decimal, no currency symbol, no thousands separator
+- **CSV**: signed decimal string, always dot-decimal, no currency symbol, no thousands separator (e.g., `-4.50`, `500.00`)
 - **XLSX**: `float(amount)` with xlsxwriter cell format `#,##0.00`
 
 ### Date representation
