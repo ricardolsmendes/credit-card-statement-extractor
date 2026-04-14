@@ -34,4 +34,4 @@
 - Dependency on feature 002 (pdf_reader) is explicitly documented in Assumptions.
 - Language selection mechanism (CLI argument `--lang`) is noted in Assumptions only — not in requirements — preserving the technology-agnostic spec.
 - Single-format assumption is documented; the architecture requirement to support additional formats is captured in Assumptions without dictating implementation pattern.
-- All items pass. Spec is ready for `/speckit.plan`.
+- **2026-04-14 revision**: Implementation feedback revealed two gaps — (1) "Beneficiário" header variant missing from FR-003; (2) pt-BR long date format "DD de MMM. YYYY" not covered by any requirement. Both addressed: FR-003 updated, FR-013 added. All items still pass. Spec ready for `/speckit.plan`.
