@@ -15,12 +15,12 @@ Add `--output-format {csv,xlsx}` to the existing transaction extractor CLI. When
 
 **Language/Version**: Python 3.11+  
 **Primary Dependencies**: `pdfplumber ≥ 0.11` (existing); `xlsxwriter ≥ 3.0` (new, optional `xlsx` extra); stdlib `csv`, `pathlib`, `datetime`, `decimal` (no new mandatory deps)  
-**Storage**: File system write — single output file per invocation  
-**Testing**: `pytest` (existing); integration tests use fixture PDFs + temp directories; unit tests use in-memory paths  
+**Storage**: File system write — single output file per invocation, in same directory as input PDF  
+**Testing**: `pytest` (existing); integration tests use fixture PDFs + `tmp_path`; unit tests use in-memory data  
 **Target Platform**: Cross-platform CLI (same as existing tool)  
 **Performance Goals**: Full pipeline (PDF parse + export) in < 5 seconds for any statement seen in practice (SC-001)  
-**Constraints**: Must not break any existing CLI behaviour (FR-011); CSV requires no extras; XLSX export gracefully degrades with a clear error if xlsxwriter is absent  
-**Scale/Scope**: Single-user CLI; no concurrency or large-file streaming required beyond what already exists
+**Constraints**: Must not break any existing CLI behaviour (FR-011); CSV requires no extras; XLSX export gracefully degrades with a clear error if xlsxwriter is absent (FR-014)  
+**Scale/Scope**: Single-user CLI; no concurrency required
 
 ---
 
@@ -30,9 +30,9 @@ Add `--output-format {csv,xlsx}` to the existing transaction extractor CLI. When
 |-----------|--------|-------|
 | §I Code Quality | ✅ | New `_exporter.py` module with single responsibility; no dead code |
 | §II Test-First | ✅ | All tests written (failing) before implementation; TDD enforced |
-| §III Testing Standards | ✅ | Unit tests for exporter logic; integration tests using fixture PDFs; edge cases covered |
-| §IV UX Consistency | ✅ | `--output` flag added cleanly; existing stdout table unchanged when flag omitted; errors → stderr with actionable messages |
-| §V Performance | ✅ | Export step is pure I/O, adds < 100 ms to existing < 2 s pipeline |
+| §III Testing Standards | ✅ | Unit tests for exporter logic; integration tests using fixture PDFs and `tmp_path`; edge cases covered |
+| §IV UX Consistency | ✅ | `--output-format` flag added cleanly; existing stdout table unchanged when flag omitted; confirmation to stdout; errors → stderr with actionable messages |
+| §V Performance | ✅ | Export step is pure I/O, adds negligible time to existing < 2 s pipeline |
 | §VI Simplicity | ✅ | Single new file (`_exporter.py`); `xlsxwriter` added as optional extra only; no new subpackages |
 | Data & Security | ✅ | No logging of statement content; no external transmission |
 
@@ -61,8 +61,8 @@ specs/004-export-csv-xlsx/
 ```text
 src/credit_card_statement_extractor/transaction_extractor/
 ├── __init__.py                    ← add Exporter to public exports
-├── __main__.py                    ← add --output argument; call Exporter when given
-├── _exporter.py                   ← NEW: CsvExporter + XlsxExporter
+├── __main__.py                    ← add --output-format argument; derive path; call Exporter
+├── _exporter.py                   ← NEW: Exporter class (CSV + XLSX writers)
 ├── _formatter.py                  ← unchanged
 ├── _locale.py                     ← unchanged
 ├── _models.py                     ← unchanged
@@ -78,75 +78,91 @@ pyproject.toml                     ← add [project.optional-dependencies] xlsx 
 tests/
 ├── unit/
 │   └── transaction_extractor/
-│       └── test_exporter.py       ← NEW: unit tests for CsvExporter, XlsxExporter
+│       └── test_exporter.py       ← NEW: unit tests for Exporter (CSV + XLSX)
 └── integration/
     └── transaction_extractor/
-        └── test_cli.py            ← EXTENDED: --output scenarios (CSV + XLSX)
+        └── test_cli.py            ← EXTENDED: --output-format scenarios (CSV + XLSX)
 ```
 
-**Structure Decision**: Single-project layout, extending existing `transaction_extractor` package. No new subpackage warranted (one concrete use case per §VI).
+**Structure Decision**: Single-project layout, extending existing `transaction_extractor` package. No new subpackage warranted per §VI (one concrete use case; no second use case justifying abstraction).
 
 ---
 
 ## Phase 0 Output
 
 See [research.md](research.md) — all decisions resolved:
-- XLSX library: `xlsxwriter` (zero deps, write-only, pure Python)
-- CSV: stdlib `csv`, `utf-8-sig`, comma delimiter, dot-decimal amounts
-- Architecture: new `_exporter.py` module, `--output-format` flag in `__main__.py`; output path derived from input PDF stem
-- Dependency: optional `xlsx` extra in `pyproject.toml`
+
+- **XLSX library**: `xlsxwriter` (zero deps, write-only, pure Python, native date/numeric support)
+- **CSV**: stdlib `csv`, `utf-8-sig` encoding, comma delimiter, dot-decimal amounts (never locale-formatted)
+- **Architecture**: new `_exporter.py` module; `--output-format` flag in `__main__.py`; output path derived from input PDF stem
+- **Dependency**: optional `xlsx = ["xlsxwriter>=3.0"]` extra in `pyproject.toml`
+- **Error handling**: write errors → exit 1; missing xlsxwriter → exit 1 with install hint; zero transactions → existing exit 2 path fires before any write
 
 ---
 
 ## Phase 1 Output
 
-- [data-model.md](data-model.md) — ExportConfig value object; column mapping
-- [contracts/cli-contract.md](contracts/cli-contract.md) — updated CLI schema, CSV/XLSX format contracts
-- [quickstart.md](quickstart.md) — all scenarios with expected output
+- [data-model.md](data-model.md) — `ExportConfig` value object; column mapping table
+- [contracts/cli-contract.md](contracts/cli-contract.md) — updated CLI schema with `--output-format`; CSV and XLSX format contracts; file name derivation rule; error table
+- [quickstart.md](quickstart.md) — all scenarios with expected stdout and file content
 
 ---
 
 ## Key Implementation Notes
 
-### `_exporter.py` design
+### Output path derivation
 
 ```python
-# Public interface only — implementation detail
+# In __main__.py, after args are parsed:
+output_path = Path(args.file_path).resolve().parent / (
+    Path(args.file_path).stem + f"-transactions.{args.output_format}"
+)
+```
+
+### `_exporter.py` public interface
+
+```python
 class Exporter:
     def export(
         self,
         transactions: list[Transaction],
         locale: LocaleConfig,
         path: Path,
-        format: Literal["csv", "xlsx"],
+        fmt: Literal["csv", "xlsx"],
         has_beneficiary: bool = False,
     ) -> None:
-        """Write transactions to CSV or XLSX. format must be 'csv' or 'xlsx'."""
+        """Write transactions to path in fmt format ('csv' or 'xlsx')."""
 ```
 
-- Dispatches on `format`: `"csv"` → `_write_csv()`, `"xlsx"` → `_write_xlsx()`
-- `path` is the fully-derived output path (computed in `__main__.py` from the input PDF stem)
-- Validates parent directory is writable before writing
-- For XLSX: imports `xlsxwriter` inside the method — catches `ImportError`, raises with install hint
+- Dispatches on `fmt`: `"csv"` → `_write_csv()`, `"xlsx"` → `_write_xlsx()`
+- `path` is the fully-derived output path (computed in `__main__.py`)
+- Attempts to open the file for writing before any data work — `OSError`/`PermissionError` surfaced to caller
+- For XLSX: `import xlsxwriter` inside `_write_xlsx()` — catches `ImportError`, raises `RuntimeError` with install hint
 
-### Amount formatting
+### Column order (both formats)
 
-- CSV: `str(abs(amount))` with sign prefix — always dot-decimal, never locale-formatted
-- XLSX: write as Python `float(amount)` with xlsxwriter numeric format `#,##0.00`
+`[date, (beneficiary if has_beneficiary), description, amount]` — same as the table formatter.
 
-### Column order
+### Amount representation
 
-`[date, (beneficiary if has_beneficiary), description, amount]` — same as the formatter.
+- **CSV**: `f"{'+' if amount > 0 else ''}{amount}"` — always dot-decimal, no currency symbol, no thousands separator
+- **XLSX**: `float(amount)` with xlsxwriter cell format `#,##0.00`
+
+### Date representation
+
+- **CSV**: `date.strftime(locale.date_format)` — locale-formatted text string
+- **XLSX**: native `datetime.date` written directly (xlsxwriter stores it as a date serial)
 
 ### `__main__.py` changes
 
-1. Add `--output-format` argument (`choices=["csv", "xlsx"]`) to `_build_arg_parser()`
-2. After parsing transactions (existing flow), branch:
-   - `args.output_format` is None → existing `Formatter.render()` path (unchanged)
-   - `args.output_format` is set → derive output path as `<pdf_parent>/<pdf_stem>-transactions.<ext>` → `Exporter().export(...)` → print confirmation to stdout
-3. All existing error paths (exit 1/2/3) remain untouched
+1. Add `--output-format` argument (`choices=["csv", "xlsx"]`, default `None`) to `_build_arg_parser()`
+2. After transactions are parsed, branch:
+   - `args.output_format` is `None` → existing `Formatter.render()` + `print()` path (unchanged)
+   - `args.output_format` is set → derive `output_path` → call `Exporter().export(...)` → print confirmation
+3. Wrap the `Exporter.export()` call in a `try/except (OSError, RuntimeError)` → stderr + exit 1
+4. All existing error paths (exit 1 / exit 2 / exit 3) remain untouched
 
-### `pyproject.toml` change
+### `pyproject.toml` addition
 
 ```toml
 [project.optional-dependencies]
