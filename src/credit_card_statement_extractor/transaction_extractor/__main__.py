@@ -1,11 +1,12 @@
 """CLI entry point for the transaction extractor.
 
 Usage:
-    python -m credit_card_statement_extractor.transaction_extractor <file_path> [--lang en|pt-BR]
+    python -m credit_card_statement_extractor.transaction_extractor <file_path>
+        [--lang en|pt-BR] [--output-format csv|xlsx]
 
 Exit codes:
     0 — success (at least one transaction extracted)
-    1 — user error (no argument, or file not found)
+    1 — user error (no argument, file not found, or export write error)
     2 — parse failure (not a valid PDF, or no transactions found)
     3 — unexpected internal error
 """
@@ -17,6 +18,7 @@ from pathlib import Path
 from credit_card_statement_extractor.pdf_reader._pdfplumber_reader import (
     PdfplumberReader,
 )
+from credit_card_statement_extractor.transaction_extractor._exporter import Exporter
 from credit_card_statement_extractor.transaction_extractor._formatter import Formatter
 from credit_card_statement_extractor.transaction_extractor._locale import (
     LOCALE_EN,
@@ -26,7 +28,7 @@ from credit_card_statement_extractor.transaction_extractor._parser import Defaul
 
 _USAGE = (
     "Usage: python -m credit_card_statement_extractor.transaction_extractor"
-    " <file_path> [--lang <code>]"
+    " <file_path> [--lang <code>] [--output-format csv|xlsx]"
 )
 
 _LOCALES = {
@@ -50,6 +52,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         choices=list(_LOCALES.keys()),
         default="en",
         help="Output language (default: en).",
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["csv", "xlsx"],
+        default=None,
+        help="Export transactions to a file instead of printing to stdout.",
     )
     return parser
 
@@ -110,8 +118,29 @@ def main() -> None:
         )
 
     has_beneficiary = any(t.beneficiary is not None for t in transactions)
-    formatter = Formatter()
-    print(formatter.render(transactions, locale, has_beneficiary=has_beneficiary))
+
+    if args.output_format is not None:
+        output_path = Path(args.file_path).resolve().parent / (
+            Path(args.file_path).stem + f"-transactions.{args.output_format}"
+        )
+        try:
+            Exporter().export(
+                transactions,
+                locale,
+                output_path,
+                args.output_format,
+                has_beneficiary=has_beneficiary,
+            )
+        except (OSError, PermissionError) as e:
+            print(f"Error: Cannot write to output file: {output_path}\n{e}", file=sys.stderr)
+            sys.exit(1)
+        except RuntimeError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Exported {len(transactions)} transactions to {output_path.name}")
+    else:
+        formatter = Formatter()
+        print(formatter.render(transactions, locale, has_beneficiary=has_beneficiary))
 
 
 if __name__ == "__main__":

@@ -246,3 +246,149 @@ class TestFR014BeneficiaryColumnIntegration:
         result = _run(str(EN_PDF))
         assert result.returncode == 0
         assert "Benefici" not in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# T004 / T009: US1 + US2 — CSV and XLSX export via --output-format
+# ---------------------------------------------------------------------------
+
+
+class TestOutputFormatCSV:
+    def test_csv_exit_0(self, tmp_path: Path) -> None:
+        """(a) CLI exits 0 and prints confirmation."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        result = _run(str(pdf), "--output-format", "csv")
+        assert result.returncode == 0
+        assert "Exported 4 transactions to" in result.stdout
+
+    def test_csv_file_created(self, tmp_path: Path) -> None:
+        """(b) Output file en_statement-transactions.csv is created next to the PDF."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        _run(str(pdf), "--output-format", "csv")
+        assert (tmp_path / "en_statement-transactions.csv").exists()
+
+    def test_csv_contains_header(self, tmp_path: Path) -> None:
+        """(c) CSV contains Date,Description,Amount header."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        _run(str(pdf), "--output-format", "csv")
+        text = (tmp_path / "en_statement-transactions.csv").read_text(encoding="utf-8-sig")
+        assert text.splitlines()[0] == "Date,Description,Amount"
+
+    def test_csv_contains_coffee_shop(self, tmp_path: Path) -> None:
+        """(d) CSV contains Coffee Shop in a data row."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        _run(str(pdf), "--output-format", "csv")
+        text = (tmp_path / "en_statement-transactions.csv").read_text(encoding="utf-8-sig")
+        assert "Coffee Shop" in text
+
+    def test_csv_no_table_in_stdout(self, tmp_path: Path) -> None:
+        """(e) stdout does NOT contain the fixed-width table separator."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        result = _run(str(pdf), "--output-format", "csv")
+        assert "----------" not in result.stdout
+
+    def test_csv_ptbr_header(self, tmp_path: Path) -> None:
+        """(f) pt-BR produces Data,Descrição,Valor header."""
+        import shutil
+
+        pdf = tmp_path / "ptbr_statement.pdf"
+        shutil.copy(PTBR_PDF, pdf)
+        _run(str(pdf), "--output-format", "csv", "--lang", "pt-BR")
+        text = (tmp_path / "ptbr_statement-transactions.csv").read_text(encoding="utf-8-sig")
+        assert text.splitlines()[0] == "Data,Descrição,Valor"
+
+    def test_csv_ptbr_beneficiary_header(self, tmp_path: Path) -> None:
+        """(g) Beneficiary fixture produces Beneficiário in header."""
+        import shutil
+
+        pdf = tmp_path / "ptbr_long_date_beneficiary_statement.pdf"
+        shutil.copy(PTBR_BENEFICIARY_PDF, pdf)
+        _run(str(pdf), "--output-format", "csv", "--lang", "pt-BR")
+        text = (tmp_path / "ptbr_long_date_beneficiary_statement-transactions.csv").read_text(
+            encoding="utf-8-sig"
+        )
+        assert "Beneficiário" in text.splitlines()[0]
+
+    def test_csv_confirmation_filename_in_stdout(self, tmp_path: Path) -> None:
+        """Confirmation message includes derived filename."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        result = _run(str(pdf), "--output-format", "csv")
+        assert "en_statement-transactions.csv" in result.stdout
+
+    def test_csv_write_permission_denied(self, tmp_path: Path) -> None:
+        """(h) Unwritable directory → stderr contains 'Cannot write' and exit 1."""
+        import os
+        import shutil
+        import stat
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        # Remove write permission from tmp_path
+        os.chmod(tmp_path, stat.S_IRUSR | stat.S_IXUSR)
+        try:
+            result = _run(str(pdf), "--output-format", "csv")
+            assert result.returncode == 1
+            assert "Cannot write" in result.stderr or "Error" in result.stderr
+        finally:
+            os.chmod(tmp_path, stat.S_IRWXU)
+
+
+class TestOutputFormatXLSX:
+    def test_xlsx_exit_0(self, tmp_path: Path) -> None:
+        """(a) CLI exits 0 and prints confirmation with .xlsx filename."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        result = _run(str(pdf), "--output-format", "xlsx")
+        assert result.returncode == 0
+        assert "Exported 4 transactions to" in result.stdout
+        assert ".xlsx" in result.stdout
+
+    def test_xlsx_file_created_and_valid_zip(self, tmp_path: Path) -> None:
+        """(b) Output file is created and is a valid ZIP."""
+        import shutil
+        import zipfile
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        _run(str(pdf), "--output-format", "xlsx")
+        out = tmp_path / "en_statement-transactions.xlsx"
+        assert out.exists()
+        assert zipfile.is_zipfile(out)
+
+    def test_xlsx_no_table_in_stdout(self, tmp_path: Path) -> None:
+        """(c) stdout does NOT contain the fixed-width table separator."""
+        import shutil
+
+        pdf = tmp_path / "en_statement.pdf"
+        shutil.copy(EN_PDF, pdf)
+        result = _run(str(pdf), "--output-format", "xlsx")
+        assert "----------" not in result.stdout
+
+    def test_xlsx_ptbr_exit_0(self, tmp_path: Path) -> None:
+        """(d) pt-BR XLSX export exits 0."""
+        import shutil
+
+        pdf = tmp_path / "ptbr_statement.pdf"
+        shutil.copy(PTBR_PDF, pdf)
+        result = _run(str(pdf), "--output-format", "xlsx", "--lang", "pt-BR")
+        assert result.returncode == 0
